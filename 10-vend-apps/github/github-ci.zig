@@ -244,6 +244,13 @@ pub fn mirrPush(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if (okay == want) return .{ .done = try std.fmt.allocPrint(ctx.a, "{d} mirror(s) reachable", .{okay}) };
     if (mode == .chec) return .{ .wait = "a mirror is not reachable" };
     const g = ctx.gitz(try @import("github-repo.zig").sshzCommandPub(ctx));
+    // the first explicit push url replaces git's default: pin the origin url first, or pushes stop reaching GitHub
+    const expl = try g.run(&.{ "config", "--get-all", try std.fmt.allocPrint(ctx.a, "remote.{s}.pushurl", .{ctx.conf.repo.remo}) });
+    if (expl.text().len == 0) {
+        const orig = try g.run(&.{ "remote", "get-url", ctx.conf.repo.remo });
+        if (!orig.okay()) return ctxm.fail("cannot read the origin url", orig.err, "check the repo folder has a remote");
+        _ = try g.run(&.{ "remote", "set-url", "--add", "--push", ctx.conf.repo.remo, orig.text() });
+    }
     for (ctx.conf.mirr) |m| {
         if (!m.onzz) continue;
         _ = try g.run(&.{ "remote", "set-url", "--add", "--push", ctx.conf.repo.remo, m.urlz });

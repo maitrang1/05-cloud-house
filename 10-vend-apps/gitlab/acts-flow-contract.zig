@@ -125,6 +125,12 @@ test "full setup flow: account, project, mirror, all through the real engine" {
     mock1.runzDone = true; // the mirror workflow "ran" in the mock already
     try eng1.runAll(&mirr.rows(&mirrCtx));
 
+    // both push urls are listed: GitHub (pinned first) and GitLab; without the pin a push would reach GitLab only
+    const pushurls = try tool1.runz(&.{ "git", "config", "--get-all", "remote.origin.pushurl" }, repo);
+    try std.testing.expect(std.mem.indexOf(u8, pushurls.outz, githDir) != null);
+    try std.testing.expect(std.mem.indexOf(u8, pushurls.outz, "@gitlab.com:") != null or std.mem.indexOf(u8, pushurls.outz, ".git") != null);
+    try std.testing.expect(std.mem.count(u8, pushurls.outz, "\n") >= 1);
+
     // the mirror workflow was written into the copy folder from the template, every marker filled
     const flow = try std.Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(gpa, &.{ repo, ".github/workflows/mirror.yml" }), gpa, .limited(64 * 1024));
     try std.testing.expect(std.mem.indexOf(u8, flow, "ghowner/cloud-house.git") != null or std.mem.indexOf(u8, flow, "/cloud-house.git") != null);

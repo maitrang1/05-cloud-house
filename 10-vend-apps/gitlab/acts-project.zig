@@ -107,6 +107,14 @@ pub const Ctx = struct {
         const urlz = try std.fmt.allocPrint(self.gpa, "git@{s}:{s}.git", .{ self.conf.gitl.host, path });
         const list = try self.tool.runz(&.{ self.conf.tool.gitz, "remote", "get-url", "--all", self.conf.repo.remo }, self.conf.repo.path);
         if (list.okay() and std.mem.indexOf(u8, list.outz, urlz) != null) return .{ .okay = "already added" };
+        // the first explicit push url replaces git's default: pin the origin url first, or pushes stop reaching GitHub
+        const expl = try self.tool.runz(&.{ self.conf.tool.gitz, "config", "--get-all", try std.fmt.allocPrint(self.gpa, "remote.{s}.pushurl", .{self.conf.repo.remo}) }, self.conf.repo.path);
+        if (expl.text().len == 0) {
+            const orig = try self.tool.runz(&.{ self.conf.tool.gitz, "remote", "get-url", self.conf.repo.remo }, self.conf.repo.path);
+            if (!orig.okay()) return error.OriginUrlRead;
+            const pin = try self.tool.runz(&.{ self.conf.tool.gitz, "remote", "set-url", "--add", "--push", self.conf.repo.remo, orig.text() }, self.conf.repo.path);
+            if (!pin.okay()) return error.PushUrlFail;
+        }
         const push = try self.tool.runz(&.{ self.conf.tool.gitz, "remote", "set-url", "--add", "--push", self.conf.repo.remo, urlz }, self.conf.repo.path);
         if (!push.okay()) return error.PushUrlFail;
         return .{ .okay = urlz };
