@@ -87,7 +87,7 @@ pub const Ctx = struct {
     }
 
     pub fn gitz(self: *const Ctx, sshz: []const u8) git.Git {
-        return .{ .io = self.io, .a = self.a, .env = self.env, .root = self.root, .tmos_secs = self.conf.gitz.tmos_secs, .sshz = sshz, .audi = self.audi };
+        return .{ .io = self.io, .a = self.a, .env = self.env, .root = self.root, .bin = self.conf.tool.gitz, .tmos_secs = self.conf.gitz.tmos_secs, .sshz = sshz, .audi = self.audi };
     }
 
     // passphrase: the named environment variable, else typed hidden (twice for a new vault) ----

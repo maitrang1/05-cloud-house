@@ -2,7 +2,7 @@
   "vers": 1,
   "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "forgejo-vault.json", "stat": "forgejo-state.json", "audi": "forgejo-audit.log", "acct": "forgejo-account.json" },
   "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1 },
-  "repo": { "path": "/home/mai_trang/05-cloud-house-synch", "bran": "main", "remo": "origin", "push": "ssh://git@{pubh}:{sshp}/{path}.git" },
+  "repo": { "path": "{home}/05-cloud-house-synch", "bran": "main", "remo": "origin", "push": "ssh://git@{pubh}:{sshp}/{path}.git" },
   "rele": { "base": "https://codeberg.org/forgejo/forgejo/releases/download", "vers": "15.0.5", "arch": "linux-amd64", "file": "forgejo-{vers}-{arch}", "sums": ".sha256", "maxb": 268435456 },
   "host": { "bina": "/usr/local/bin/forgejo", "work": "/var/lib/forgejo", "conf": "/etc/forgejo/app.ini", "unit": "/etc/systemd/system/forgejo.service", "svcu": "git", "pubh": "127.0.0.1", "port": 3000, "sshp": 2222 },
   "ini": [

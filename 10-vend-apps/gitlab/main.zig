@@ -64,19 +64,22 @@ fn runCmd(gpa: std.mem.Allocator, io: std.Io, cmd: Cmd, argv: []const []const u8
     };
 
     // step 0: preflight — the tools the app needs, printed before anything live happens
-    var logz = audi.Audi{ .io = io, .path = try tmplHome(gpa, home, cfg.data.audi) };
+    const rootz = try tmplHome(gpa, home, cfg.data.root);
+    // the audit log lives in the data folder, never in the folder the app was started from; make the folder first so the first line is not lost
+    try std.Io.Dir.cwd().createDirPath(io, rootz);
+    var logz = audi.Audi{ .io = io, .path = try std.fs.path.join(gpa, &.{ rootz, cfg.data.audi }) };
     var tool1 = try tool.Tool.init(gpa, io, &logz, &envz, cfg.tool.time);
     const haveGitz = tool1.have(cfg.tool.gitz);
     const haveSshz = tool1.have(cfg.tool.sshk);
     osyz.outz(io, "preflight: git={} ssh-keygen={} os={s}\n", .{ haveGitz, haveSshz, osyz.nameOsys() });
     if (!haveGitz or !haveSshz) return error.MissingTool;
 
-    const rootz = try tmplHome(gpa, home, cfg.data.root);
+    cfg.sshz.file = try tmplHome(gpa, home, cfg.sshz.file);
+    cfg.repo.path = try tmplHome(gpa, home, cfg.repo.path);
     conf.acctOverride(gpa, io, try std.fs.path.join(gpa, &.{ rootz, cfg.data.acct }), &cfg, &diag) catch |erro| {
         osyz.errz("account file error: {s}: {s} (fix {s} in {s})\n", .{ @errorName(erro), diag.mess, cfg.data.acct, rootz });
         return error.ConfigBad;
     };
-    try std.Io.Dir.cwd().createDirPath(io, rootz);
     const vaulPath = try std.fs.path.join(gpa, &.{ rootz, cfg.data.vaul });
     const statPath = try std.fs.path.join(gpa, &.{ rootz, cfg.data.stat });
 

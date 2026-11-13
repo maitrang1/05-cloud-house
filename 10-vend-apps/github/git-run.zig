@@ -34,6 +34,7 @@ pub const Git = struct {
     a: std.mem.Allocator,
     env: *const std.process.Environ.Map,
     root: []const u8,
+    bin: []const u8 = "git",
     tmos_secs: u32 = 300,
     // "ssh -i <key> ..." for pushes with the app's own key, empty = git's default ----
     sshz: []const u8 = "",
@@ -74,7 +75,7 @@ pub const Git = struct {
     pub fn run(self: *const Git, args: []const []const u8) GitzErro!Res {
         var argv: [CF.args_maxz][]const u8 = undefined;
         if (args.len + 3 > argv.len) return error.RunFail;
-        argv[0] = "git";
+        argv[0] = self.bin;
         argv[1] = "-C";
         argv[2] = self.root;
         @memcpy(argv[3..][0..args.len], args);

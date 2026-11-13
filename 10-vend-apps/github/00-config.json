@@ -68,8 +68,10 @@
     "proj": false,
     "merg_dele": true,
     "comm_text": "first commit",
-    "publ_text": "sync from the work tree"
+    "publ_text": "sync from the work tree",
+    "remo": "origin"
   },
+  "tool": { "gitz": "git", "ghcl": "gh" },
   "gitz": {
     "scop": "local",
     "prot": "ssh",
@@ -118,7 +120,7 @@
     "allo": ["*.zig", "*.zon", "*00-config.json", "*df-*.json", "*10-steps.json", "*.yml", "*.mjs", "*/package.json", "*/package-lock.json", "*.10-documents/*", "*read-only.json", "*te-*.json", "*te-*.csv", "*df-*.js"],
     "deny": ["*.vault", "*.key", "*.pem", "*.env", "*.env.*", "*id_ed25519*", "*id_rsa*"],
     "keep": [".gitignore", ".gitattributes"],
-    "trash": "/home/mai_trang/00_modules/zzzz-delete-force-items/05-cloud-house-synch",
+    "trash": "{home}/00_modules/zzzz-delete-force-items/05-cloud-house-synch",
     "file_maxz_kbyt": 1024
   },
   "rule": {

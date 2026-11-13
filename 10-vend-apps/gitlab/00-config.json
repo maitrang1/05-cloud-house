@@ -2,7 +2,7 @@
   "vers": 1,
   "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "gitlab-vault.json", "stat": "gitlab-state.json", "audi": "gitlab-audit.log", "step": "steps.json", "acct": "gitlab-account.json" },
   "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1 },
-  "repo": { "path": "/home/mai_trang/05-cloud-house-synch", "bran": "main", "remo": "origin" },
+  "repo": { "path": "{home}/05-cloud-house-synch", "bran": "main", "remo": "origin" },
   "gitl": {
     "host": "gitlab.com",
     "webz": "https://gitlab.com",

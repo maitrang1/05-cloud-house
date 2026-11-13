@@ -29,7 +29,7 @@ pub fn token(ctx: *Ctx) !?[]const u8 {
 // gh mode: ask `gh` every run, so a refreshed scope list is used at once and no old token lingers in the vault ----
 fn ghToken(ctx: *Ctx) !?[]const u8 {
     if (ctx.gh_tok.len > 0) return ctx.gh_tok;
-    const got = ctx.gitz("").tool(&.{ "gh", "auth", "token" }) catch return null;
+    const got = ctx.gitz("").tool(&.{ ctx.conf.tool.ghcl, "auth", "token" }) catch return null;
     if (!got.okay() or got.text().len == 0) return null;
     ctx.gh_tok = try ctx.a.dupe(u8, got.text());
     ctx.audi.hideAdd(ctx.gh_tok);

@@ -141,6 +141,7 @@ test "shipped config parses" {
         return erro;
     };
     try std.testing.expectEqualStrings("private", conf.frep.visi);
+    try std.testing.expect(std.mem.startsWith(u8, conf.repo.path, "{home}/")); // no machine name in the shipped file
     try std.testing.expect(!conf.frep.sett.object.get("has_actions").?.bool);
     try std.testing.expect(!conf.prot.object.get("enable_force_push").?.bool);
 }

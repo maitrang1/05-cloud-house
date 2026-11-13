@@ -41,9 +41,29 @@ fn slashed(a: std.mem.Allocator, path: []const u8) ![]const u8 {
     return out;
 }
 
+// the real path when the folder exists, else the text as given without trailing separators ----
+pub fn norm(io: std.Io, a: std.mem.Allocator, path: []const u8) ![]const u8 {
+    const real = std.Io.Dir.cwd().realPathFileAlloc(io, path, a) catch return std.mem.trimEnd(u8, path, "/\\");
+    return std.mem.trimEnd(u8, real, "/\\");
+}
+
+// true when `inner` is `outer` or sits below it ----
+pub fn inside(inner: []const u8, outer: []const u8) bool {
+    if (!std.mem.startsWith(u8, inner, outer)) return false;
+    return inner.len == outer.len or inner[outer.len] == '/' or inner[outer.len] == '\\';
+}
+
 // walk the source; copy changed files; count what the repo folder holds that the source no longer has ----
 pub fn push(io: std.Io, a: std.mem.Allocator, rules: conf.Push, from: []const u8, to: []const u8, live: bool, now_secs: i64, say: *const fn (std.Io, []const u8) void) !Report {
     var rep: Report = .{};
+    // a mirror onto itself, or into its own source, would move the work tree's files away: refuse before anything runs ----
+    const from_real = try norm(io, a, from);
+    const to_real = try norm(io, a, to);
+    if (inside(from_real, to_real) or inside(to_real, from_real)) return error.RootsOverlap;
+    if (rules.trash.len > 0) {
+        const trash_real = try norm(io, a, rules.trash);
+        if (inside(trash_real, to_real) or inside(to_real, trash_real)) return error.TrashOverlap;
+    }
     const cwd = std.Io.Dir.cwd();
     var src = try cwd.openDir(io, from, .{ .iterate = true, .follow_symlinks = false });
     defer src.close(io);
@@ -163,6 +183,29 @@ test "judge: allowlist gates, deny wins, anything unlisted is left out" {
 fn put(dir: std.Io.Dir, path: []const u8, data: []const u8) !void {
     if (std.fs.path.dirname(path)) |d| try dir.createDirPath(std.testing.io, d);
     try dir.writeFile(std.testing.io, .{ .sub_path = path, .data = data });
+}
+
+test "push refuses a source and repo folder that overlap, and a trash folder inside the repo folder" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try put(tmp.dir, "tree/app/main.zig", "x");
+    try put(tmp.dir, "copy/keep.zig", "y");
+    const tree = try tmp.dir.realPathFileAlloc(io, "tree", a);
+    const copy = try tmp.dir.realPathFileAlloc(io, "copy", a);
+    const inner = try std.fs.path.join(a, &.{ tree, "app" });
+    var rules = T_RULES;
+    rules.trash = try std.fs.path.join(a, &.{ copy, "trash" });
+    try std.testing.expectError(error.RootsOverlap, push(io, a, rules, tree, tree, true, 0, &quiet));
+    try std.testing.expectError(error.RootsOverlap, push(io, a, rules, tree, inner, true, 0, &quiet));
+    try std.testing.expectError(error.RootsOverlap, push(io, a, rules, inner, tree, true, 0, &quiet));
+    try std.testing.expectError(error.TrashOverlap, push(io, a, rules, tree, copy, true, 0, &quiet));
+    rules.trash = try std.fs.path.join(a, &.{ tree, "elsewhere" });
+    _ = try push(io, a, rules, tree, copy, false, 0, &quiet); // separate folders: fine
+    try tmp.dir.access(io, "tree/app/main.zig", .{}); // nothing of the work tree was touched
 }
 
 test "push: overwrites changed files, skips folders, dry-run writes nothing, second run is idempotent, gone files move to the trash" {

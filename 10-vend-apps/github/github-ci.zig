@@ -246,7 +246,7 @@ pub fn mirrPush(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const g = ctx.gitz(try @import("github-repo.zig").sshzCommandPub(ctx));
     for (ctx.conf.mirr) |m| {
         if (!m.onzz) continue;
-        _ = try g.run(&.{ "remote", "set-url", "--add", "--push", "origin", m.urlz });
+        _ = try g.run(&.{ "remote", "set-url", "--add", "--push", ctx.conf.repo.remo, m.urlz });
         const push = try g.run(&.{ "push", m.urlz, ctx.conf.repo.bran });
         if (!push.okay()) return ctxm.fail(try std.fmt.allocPrint(ctx.a, "cannot push to {s}", .{m.name}), push.err, "check that app's own setup ran first (its own account, key and token)");
     }

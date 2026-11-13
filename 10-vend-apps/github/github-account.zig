@@ -33,7 +33,7 @@ pub fn toolChec(ctx: *Ctx, mode: Mode) anyerror!Outc {
     _ = mode;
     const st = std.Io.Dir.cwd().statFile(ctx.io, ctx.root, .{}) catch return ctxm.failCode(2, "the repo folder cannot be opened", ctx.root, "pass an existing folder with --root");
     if (st.kind != .directory) return ctxm.failCode(2, "the repo path is not a folder", ctx.root, "pass a folder with --root");
-    const ver = ctx.gitz("").tool(&.{ "git", "--version" }) catch |e| return switch (e) {
+    const ver = ctx.gitz("").tool(&.{ ctx.conf.tool.gitz, "--version" }) catch |e| return switch (e) {
         error.Missing => ctxm.fail("git is not installed", "the app pushes with git and found no git program", "install git from https://git-scm.com/downloads, then run the same command again"),
         else => ctxm.fail("git did not start", @errorName(e), "run `git --version` yourself and fix what it reports"),
     };
@@ -209,7 +209,7 @@ pub fn authDevi(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if ((try userRead(ctx)) != null) return .{ .done = "logged in" };
     if (mode == .chec) return .{ .wait = "not logged in" };
     if (std.mem.eql(u8, ctx.conf.auth.mode, "gh")) {
-        const got = ctx.gitz("").tool(&.{ "gh", "auth", "token" }) catch return ctxm.failCode(2, "gh is not available", "auth.mode is gh but the gh program did not run", "install gh and run `gh auth login --web`, or set auth.mode to device");
+        const got = ctx.gitz("").tool(&.{ ctx.conf.tool.ghcl, "auth", "token" }) catch return ctxm.failCode(2, "gh is not available", "auth.mode is gh but the gh program did not run", "install gh and run `gh auth login --web`, or set auth.mode to device");
         if (!got.okay() or got.text().len == 0) return ctxm.failCode(2, "gh is not logged in", "`gh auth token` gave no token", "run `gh auth login --web`, then run the same command again");
         return tokeKeep(ctx, got.text());
     }

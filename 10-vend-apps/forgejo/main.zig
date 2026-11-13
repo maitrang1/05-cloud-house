@@ -62,6 +62,7 @@ fn runCmd(gpa: std.mem.Allocator, io: std.Io, cmd: Cmd, argv: []const []const u8
         return error.ConfigBad;
     };
     cfg.sshz.file = try tmplHome(gpa, home, cfg.sshz.file);
+    cfg.repo.path = try tmplHome(gpa, home, cfg.repo.path);
 
     // step 0: preflight — the tools the app needs, printed before anything live happens
     const live = argv.len > 2 and std.mem.eql(u8, argv[2], "--go");

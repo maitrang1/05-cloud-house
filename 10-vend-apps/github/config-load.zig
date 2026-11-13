@@ -74,7 +74,11 @@ pub const Repo = struct {
     merg_dele: bool = true,
     comm_text: []const u8 = "first commit",
     publ_text: []const u8 = "sync from the work tree",
+    remo: []const u8 = "origin",
 };
+
+// the helper programs the app runs: name or full path ----
+pub const Tool = struct { gitz: []const u8 = "git", ghcl: []const u8 = "gh" };
 
 pub const Gitz = struct { scop: []const u8 = "local", prot: []const u8 = "ssh", crlf: []const u8 = "input", tmos_secs: u32 = 300 };
 
@@ -140,6 +144,7 @@ pub const Warn = struct { repo_maxz_mbyt: u32 = 1024, pack_maxz_mbyt: u32 = 500,
 pub const Conf = struct {
     vers: u32 = CF.vers,
     data: Data = .{},
+    tool: Tool = .{},
     http: Http = .{},
     auth: Auth = .{},
     acct: Acct = .{},
@@ -189,6 +194,11 @@ fn readAll(io: std.Io, a: std.mem.Allocator, path: []const u8) ConfErro![]const 
         return if (e == error.FileNotFound) error.Missing else error.Unreadable;
     };
     return if (std.mem.startsWith(u8, raw, "\xEF\xBB\xBF")) raw[3..] else raw;
+}
+
+// {home} in a path setting becomes the home folder (or --home) ----
+pub fn homeFill(a: std.mem.Allocator, text: []const u8, home: []const u8) ![]u8 {
+    return std.mem.replaceOwned(u8, a, text, "{home}", home);
 }
 
 // account.json overrides acct.logi / acct.mail when it exists and a field is non-empty; a missing file is fine ----
@@ -255,6 +265,8 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (!oneOf(c.repo.visi, &.{ "private", "public" })) return bad("repo.visi must be private or public", .{});
     if (c.push.file_maxz_kbyt < 1 or c.push.file_maxz_kbyt > 65536) return bad("push.file_maxz_kbyt must be 1..65536", .{});
     for (c.push.skip_dirs) |d| if (d.len == 0 or std.mem.indexOfAny(u8, d, "/\\") != null) return bad("push.skip_dirs must be plain folder names", .{});
+    if (c.repo.remo.len == 0 or std.mem.indexOfAny(u8, c.repo.remo, " /\\") != null) return bad("repo.remo must be a plain remote name like origin", .{});
+    if (c.tool.gitz.len == 0 or c.tool.ghcl.len == 0) return bad("tool.gitz and tool.ghcl must not be empty", .{});
     if (c.repo.bran.len == 0) return bad("repo.bran must not be empty", .{});
     if (!oneOf(c.gitz.scop, &.{ "local", "global" })) return bad("gitz.scop must be local or global", .{});
     if (!oneOf(c.gitz.prot, &.{ "ssh", "https" })) return bad("gitz.prot must be ssh or https", .{});
@@ -365,6 +377,17 @@ test "account.json fills logi and mail; a missing file changes nothing; an unkno
     const shipped = try confLoad(io, a, "00-config.json", false);
     try std.testing.expectEqualStrings("", shipped.acct.mail); // the synced file carries no personal value
     try std.testing.expectEqualStrings("", shipped.acct.logi);
+}
+
+test "homeFill puts the home folder into path settings; the shipped trash path carries no machine name" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    try std.testing.expectEqualStrings("/u/me/.x", try homeFill(a, "{home}/.x", "/u/me"));
+    try std.testing.expectEqualStrings("plain", try homeFill(a, "plain", "/u/me"));
+    const shipped = try confLoad(std.testing.io, a, "00-config.json", false);
+    try std.testing.expect(std.mem.startsWith(u8, shipped.push.trash, "{home}/"));
+    try std.testing.expect(std.mem.indexOf(u8, shipped.data.root, "{home}") != null);
 }
 
 test "repo.visi: private by default, public allowed, anything else refused; shipped push rules load" {

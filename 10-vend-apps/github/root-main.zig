@@ -113,6 +113,16 @@ const TABLE = [_]eng.Entry{
     .{ .acts = "repo.fina", .run = ci.repoFina },
 };
 
+// what to do about a push error, in one line ----
+fn pushFix(e: anyerror) []const u8 {
+    return switch (e) {
+        error.RootsOverlap => "--from and --root must be two separate folders (neither inside the other)",
+        error.TrashOverlap => "push.trash must be outside the --root folder",
+        error.NoTrashFolder => "set push.trash in 00-config.json: files that left the work tree are moved there",
+        else => "check both folders exist and are writable, then run again",
+    };
+}
+
 fn pushSay(io: std.Io, line: []const u8) void {
     out.say(io, "{s}", .{line});
 }
@@ -165,7 +175,8 @@ pub fn main(init: std.process.Init) void {
         out.fail(io, "config problem", conf.why, "fix 00-config.json and run again");
         die(2);
     };
-    const home_full = std.mem.replaceOwned(u8, a, cf.data.root, "{home}", home) catch die(2);
+    const home_full = conf.homeFill(a, cf.data.root, home) catch die(2);
+    cf.push.trash = conf.homeFill(a, cf.push.trash, home) catch die(2);
     conf.acctOverride(io, a, std.fs.path.join(a, &.{ home_full, cf.data.acct }) catch die(2), &cf) catch {
         out.fail(io, "account file problem", conf.why, "fix account.json in the app home (keys: logi, mail) and run again");
         die(2);
@@ -180,7 +191,7 @@ pub fn main(init: std.process.Init) void {
             die(2);
         };
         const rep = rpush.push(io, a, cf.push, from, parsed.root orelse "", parsed.live, @divFloor(std.Io.Clock.real.now(io).toMilliseconds(), 1000), &pushSay) catch |e| {
-            out.fail(io, "push failed", @errorName(e), "check both folders exist and are writable, then run again");
+            out.fail(io, "push failed", @errorName(e), pushFix(e));
             die(1);
         };
         out.say(io, "\n{s}: copied {d} · same {d} · denied {d} · too big {d} · not listed {d} · moved to trash {d}\n", .{ if (parsed.live) "pushed" else "dry-run", rep.copied, rep.same, rep.denied, rep.big, rep.other, rep.moved });
@@ -199,8 +210,12 @@ pub fn main(init: std.process.Init) void {
             out.fail(io, "no source folder given", "--from is required for publish", "pass --from <working tree> and --root <repo folder>");
             die(2);
         };
+        if (repo.rootGuard(&ctx) catch null) |bad| {
+            out.fail(io, bad.fail.what, bad.fail.why, bad.fail.fix);
+            die(2);
+        }
         const rep = rpush.push(io, a, cf.push, from, ctx.root, parsed.live, ctx.nowSecs(), &pushSay) catch |e| {
-            out.fail(io, "mirror failed", @errorName(e), "check both folders exist and are writable, then run again");
+            out.fail(io, "mirror failed", @errorName(e), pushFix(e));
             die(1);
         };
         out.say(io, "mirror: copied {d} · same {d} · denied {d} · too big {d} · moved to trash {d}\n", .{ rep.copied, rep.same, rep.denied, rep.big, rep.moved });
@@ -213,6 +228,7 @@ pub fn main(init: std.process.Init) void {
             out.say(io, "dry-run: nothing scanned, committed or pushed. Pass --live to publish.\n", .{});
             die(0);
         }
+        // a failed reset only means the cached "clean" mark survives; the scan below still reads the files
         ctx.stat.putz("scan_okay", "") catch {};
         const scanned = repo.scanSecr(&ctx, .acts) catch |e| {
             out.fail(io, "scan failed", @errorName(e), "run the same command again");
@@ -267,6 +283,7 @@ pub fn main(init: std.process.Init) void {
     }
     if (std.mem.eql(u8, parsed.cmd, "run")) {
         if (!parsed.live) {
+            // the plan sweep is informational here; the dry-run message below is the result
             eng.plan(&ctx, &TABLE) catch {};
             out.say(io, "\ndry-run only. Pass --live for the first real run (it then resumes safely).\n", .{});
             die(0);
