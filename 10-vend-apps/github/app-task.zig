@@ -1,10 +1,10 @@
 // =====================================================================
-// Des: Local test and build, one app at a time - lists the app folders, matches a name to one app, makes the jobs and runs them; nothing runs unless an app is named
+// Des: Local test and build - lists the app folders, gives each a short name, matches what you typed to apps, makes the jobs and runs them; nothing runs unless you pick apps
 // Flo: walk the work tree for build.zig > match --app names (or --app-all) > make test or build jobs > run each in its folder (retry a red job) > report every job
 // Cre: 2026-11-13                          - | Mod: 2026-11-13
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: work tree path, Task config, skip folder names, app names, optional target, a runner (real or a test double)
-// Out: Outcome{ ok count, red jobs } ; the same flat names name the cloud workflows and tags
+// Out: Outcome{ ok count, red jobs, green job indexes } ; the same short names name the cloud workflow files and release tags
 // Run: not run directly - imported by root-main.zig and github-ci.zig
 // Exe: n/a
 // =====================================================================
@@ -82,7 +82,7 @@ fn tail(a: std.mem.Allocator, path: []const u8, n: usize) ![]u8 {
     return flat(a, p[start..]);
 }
 
-// every app's short name: its last folder (github); two apps with the same last folder both take their last two (facebook-scrape); a clash that is left stops everything ----
+// every app's short name: its last folder (github); two apps with the same last folder both take their last two (facebook-scrape); a clash that is left, or a name with odd characters (it lands in YAML and shell), stops everything ----
 pub fn namesAll(a: std.mem.Allocator, paths: []const []const u8) ![]const Named {
     var out: std.ArrayList(Named) = .empty;
     for (paths) |p| {
@@ -93,7 +93,10 @@ pub fn namesAll(a: std.mem.Allocator, paths: []const []const u8) ![]const Named 
         };
         try out.append(a, .{ .path = p, .name = if (clash) try tail(a, p, 2) else one });
     }
-    for (out.items, 0..) |x, i| for (out.items[0..i]) |y| if (std.mem.eql(u8, x.name, y.name)) return error.NameClash;
+    for (out.items, 0..) |x, i| {
+        for (x.name) |ch| if (!(std.ascii.isAlphanumeric(ch) or ch == '-' or ch == '_' or ch == '.')) return error.BadName;
+        for (out.items[0..i]) |y| if (std.mem.eql(u8, x.name, y.name)) return error.NameClash;
+    }
     return out.items;
 }
 
@@ -164,7 +167,7 @@ pub fn runJobs(io: std.Io, a: std.mem.Allocator, t: conf.Task, from: []const u8,
             last = run(rctx, dir, j.argv);
             tries += 1;
             if (last.code == 0 or tries > t.retr) break;
-            say(io, try std.fmt.allocPrint(a, "{s}: red, trying once more\n", .{j.label}));
+            say(io, try std.fmt.allocPrint(a, "{s}: red, retrying\n", .{j.label}));
         }
         if (last.code == 0) {
             ok += 1;
@@ -255,6 +258,10 @@ test "namesAll: the last folder, the last two on a clash, a clash that is left s
     try std.testing.expectEqualStrings("10-vend/github", got[2].path);
     // same last two folders too: no honest short name exists
     try std.testing.expectError(error.NameClash, namesAll(a, &.{ "a/x/scrape", "b/x/scrape" }));
+    // a name with a quote, a space or a dollar would break the workflow file and its shell lines: refused
+    try std.testing.expectError(error.BadName, namesAll(a, &.{ "v/it's", "v/beta" }));
+    try std.testing.expectError(error.BadName, namesAll(a, &.{ "v/has space", "v/beta" }));
+    try std.testing.expectError(error.BadName, namesAll(a, &.{ "v/$(x)" }));
     // a one-folder name that equals another app's two-folder name is also a clash
     try std.testing.expectError(error.NameClash, namesAll(a, &.{ "x/scrape", "y/x/scrape", "facebook-scrape", "z/facebook/scrape" }));
 }

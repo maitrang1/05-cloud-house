@@ -18,7 +18,7 @@ const Outc = ctxm.Outc;
 const tasks = @import("app-task.zig");
 const rpush = @import("repo-push.zig");
 
-const CF = .{ .runz_poll_secs = 5, .runz_wait_secs = 30, .kill_okay = "0" };
+const CF = .{ .runz_poll_secs = 5 };
 
 const PubKey = struct { key_id: []const u8 = "", key: []const u8 = "" };
 const SecrRow = struct { name: []const u8 = "", created_at: []const u8 = "" };
@@ -90,8 +90,8 @@ const MARK = "# made by the github app";
 
 pub const Flows = struct { apps: u32 = 0, changed: u32 = 0, dropped: u32 = 0 };
 
-fn flowRel(a: std.mem.Allocator, dir: []const u8, name: []const u8) ![]u8 {
-    return std.fmt.allocPrint(a, "{s}/{s}.yml", .{ std.mem.trimEnd(u8, dir, "/"), name });
+fn inDir(a: std.mem.Allocator, dir: []const u8, file: []const u8) ![]u8 {
+    return std.fmt.allocPrint(a, "{s}/{s}", .{ std.mem.trimEnd(u8, dir, "/"), file });
 }
 
 // one workflow per app folder found in the repo folder, written when it differs from the file there; a dropped or orphaned generated file moves to the trash ----
@@ -104,8 +104,9 @@ pub fn ciizRender(ctx: *Ctx, write: bool) !Flows {
     for (list) |x| {
         const name = x.name;
         const p = x.path;
-        const rel = try flowRel(ctx.a, cf.dir_path, name);
-        try wanted.put(ctx.a, try std.fmt.allocPrint(ctx.a, "{s}.yml", .{name}), {});
+        const file = try std.fmt.allocPrint(ctx.a, "{s}.yml", .{name});
+        const rel = try inDir(ctx.a, cf.dir_path, file);
+        try wanted.put(ctx.a, file, {});
         const want = try tmplFill(ctx.a, raw, cf, name, p, rel);
         const dest = try ctx.path(&.{ ctx.root, rel });
         const have = std.Io.Dir.cwd().readFileAlloc(ctx.io, dest, ctx.a, .limited(256 * 1024)) catch null;
@@ -118,6 +119,8 @@ pub fn ciizRender(ctx: *Ctx, write: bool) !Flows {
     const dir_abs = try ctx.path(&.{ ctx.root, cf.dir_path });
     var dir = std.Io.Dir.cwd().openDir(ctx.io, dir_abs, .{ .iterate = true }) catch return fl;
     defer dir.close(ctx.io);
+    // name the stale files first and move them after: a folder that changes while it is read can skip entries
+    var stale_files: std.ArrayList([]const u8) = .empty;
     var it = dir.iterate();
     while (try it.next(ctx.io)) |ent| {
         if (ent.kind != .file or !std.mem.endsWith(u8, ent.name, ".yml") or wanted.contains(ent.name)) continue;
@@ -132,12 +135,12 @@ pub fn ciizRender(ctx: *Ctx, write: bool) !Flows {
             const n = f.readPositionalAll(ctx.io, &head, 0) catch continue;
             stale = std.mem.eql(u8, head[0..n], MARK);
         }
-        if (!stale) continue;
-        fl.dropped += 1;
-        if (!write) continue;
-        if (ctx.conf.push.trash.len == 0) return error.NoTrashFolder;
-        try rpush.trashFile(ctx.io, ctx.a, ctx.conf.push.trash, ctx.root, try flowRel(ctx.a, cf.dir_path, ent.name[0 .. ent.name.len - 4]), ctx.nowSecs());
+        if (stale) try stale_files.append(ctx.a, try ctx.a.dupe(u8, ent.name));
     }
+    fl.dropped = @intCast(stale_files.items.len);
+    if (!write or stale_files.items.len == 0) return fl;
+    if (ctx.conf.push.trash.len == 0) return error.NoTrashFolder;
+    for (stale_files.items) |name| try rpush.trashFile(ctx.io, ctx.a, ctx.conf.push.trash, ctx.root, try inDir(ctx.a, cf.dir_path, name), ctx.nowSecs());
     return fl;
 }
 

@@ -156,7 +156,7 @@ fn die(code: u8) noreturn {
     std.process.exit(code);
 }
 
-// `test` and `build`: one app at a time, named by the user; nothing runs without --app or --app-all ----
+// `test` and `build`: nothing runs unless you pick apps with --app, --app-edit or --app-all ----
 fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Map, cf: conf.Conf, p: Args, seen_path: []const u8) noreturn {
     const is_build = std.mem.eql(u8, p.cmd, "build");
     const from = p.from orelse {
@@ -176,8 +176,8 @@ fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Ma
         out.fail(io, "cannot list the apps", @errorName(e), "check --from is the work tree");
         die(1);
     };
-    const list = task.namesAll(a, paths) catch {
-        out.fail(io, "two apps share a short name", "their last two folder names match too", "rename one app folder");
+    const list = task.namesAll(a, paths) catch |e| {
+        out.fail(io, if (e == error.BadName) "an app folder has an odd name" else "two apps share a short name", if (e == error.BadName) "app folder names may only hold letters, digits, dash, underscore and dot" else "their last two folder names match too", "rename the app folder");
         die(2);
     };
     var chosen: std.ArrayList(task.Named) = .empty;
@@ -330,7 +330,7 @@ pub fn main(init: std.process.Init) void {
         };
         out.say(io, "mirror: copied {d} · same {d} · denied {d} · too big {d} · moved to trash {d}\n", .{ rep.copied, rep.same, rep.denied, rep.big, rep.moved });
         const flow = ci.ciizRender(&ctx, parsed.live) catch |e| {
-            if (e == error.NameClash) out.fail(io, "two apps share a short name", "their last two folder names match too; no workflow was written", "rename one app folder") else out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
+            if (e == error.NameClash or e == error.BadName) out.fail(io, "an app folder name cannot be used", if (e == error.BadName) "app folder names may only hold letters, digits, dash, underscore and dot" else "two apps share their last two folder names", "rename the app folder; no workflow was written") else out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
             die(1);
         };
         if (flow.changed + flow.dropped > 0) out.say(io, "workflows: {s} {d} file(s), {s} {d} old file(s) in {s}\n", .{ if (parsed.live) "updated" else "would update", flow.changed, if (parsed.live) "moved out" else "would move out", flow.dropped, cf.ciiz.dir_path });
