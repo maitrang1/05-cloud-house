@@ -1,0 +1,58 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# one run per branch: a newer push cancels the older one (saves free minutes)
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # kill switch: set the repo variable CI_KILL to 1 and every run stops here
+    if: ${{ vars.CI_KILL != '1' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    env:
+      ZIG_VERS: "0.16.0"
+    steps:
+      - id: CODE-PULL
+        uses: actions/checkout@v4
+
+      - id: ZIGZ-CASH
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/zig
+          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}
+
+      - id: ZIGZ-INST
+        run: |
+          curl -fsSL "https://ziglang.org/download/${ZIG_VERS}/zig-x86_64-linux-${ZIG_VERS}.tar.xz" -o zig.tar.xz
+          mkdir -p "$HOME/zig" && tar -xJf zig.tar.xz -C "$HOME/zig" --strip-components=1
+          echo "$HOME/zig" >> "$GITHUB_PATH"
+
+      - id: EXEZ-BUIL
+        run: |
+          set -e
+          found=0
+          for f in $(git ls-files '*build.zig'); do
+            found=1
+            (cd "$(dirname "$f")" && zig build && zig build test)
+          done
+          echo "build files: $found"
+
+      - id: PING-SEND
+        if: ${{ always() }}
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+          JOBZ_STAT: ${{ job.status }}
+        run: |
+          if [ -z "$HEALTHCHECKS_URL" ]; then echo "no ping url set"; exit 0; fi
+          if [ "$JOBZ_STAT" = "success" ]; then curl -fsS -m 10 --retry 3 "$HEALTHCHECKS_URL" > /dev/null; else curl -fsS -m 10 --retry 3 "$HEALTHCHECKS_URL/fail" > /dev/null; fi
