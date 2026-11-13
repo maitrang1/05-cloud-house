@@ -48,7 +48,8 @@ pub const Audit = struct {
         const full = std.mem.concat(self.a, u8, &.{ text, "\n" }) catch return;
         const cwd = std.Io.Dir.cwd();
         if (std.fs.path.dirname(self.path)) |d| cwd.createDirPath(io, d) catch return;
-        const f = cwd.createFile(io, self.path, .{ .truncate = false, .read = true }) catch return;
+        // owner-only on POSIX; Windows keeps the profile folder's own access list ----
+        const f = cwd.createFile(io, self.path, if (comptime @import("builtin").os.tag == .windows) .{ .truncate = false, .read = true } else .{ .truncate = false, .read = true, .permissions = .fromMode(0o600) }) catch return;
         defer f.close(io);
         const end = f.length(io) catch return;
         f.writePositionalAll(io, full, end) catch return;

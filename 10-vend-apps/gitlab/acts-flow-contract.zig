@@ -40,8 +40,8 @@ fn confMake(gpa: std.mem.Allocator) !@import("config-load.zig").Conf {
         .logi = .{ .orde = &.{"devi"} },
         .tool = .{ .gitz = "git", .sshk = "ssh-keygen", .sshz = "ssh", .glab = "glab", .ghcl = "gh", .time = 20 },
         .glab = .{ .stat = &.{}, .logi = &.{}, .toke = &.{} },
-        .ghcl = .{ .toke = &.{} },
-        .sshz = .{ .file = "", .conf = "", .titl = "cloud-house", .user = "git", .veri = false },
+        .ghcl = .{ .toke = &.{}, .user = &.{} },
+        .sshz = .{ .file = "", .titl = "cloud-house" },
         .prot = .{ .push = 30, .merg = 40, .forc = false },
         .toke = .{ .name = "mirror", .scop = &.{"write_repository"}, .role = 30, .days = 90, .rota = 14 },
         .guid = .{ .open = false, .clip = false, .poll = 1, .wait = 30 },
@@ -106,7 +106,7 @@ test "full setup flow: account, project, mirror, all through the real engine" {
     try queu.list.append(gpa, try gpa.dupe(u8, "g")); // stands in for the human on the email-link step (never auto-detected)
     var eng1 = engi.Engi{ .gpa = gpa, .io = io, .stat = &stat1, .inpu = &queu, .guid = .{ .open = false, .clip = false, .poll = 1, .wait = 5 } };
 
-    var acctCtx = acct.Ctx{ .gpa = gpa, .conf = &conf1, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1 };
+    var acctCtx = acct.Ctx{ .gpa = gpa, .conf = &conf1, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1, .tool = &tool1 };
     const acctRows = acct.rows(&acctCtx);
     try eng1.runOne(acctRows[0]); // acc-read-gith
     try eng1.runOne(acctRows[1]); // acc-free-name: username must still be free, nobody signed up yet

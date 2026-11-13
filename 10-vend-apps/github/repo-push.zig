@@ -118,6 +118,34 @@ pub fn push(io: std.Io, a: std.mem.Allocator, rules: conf.Push, from: []const u8
     return rep;
 }
 
+// a plain rename when both folders share a disk; across disks (rename refuses) copy, check the size, then remove the source: the same thing `mv` does ----
+fn moveFile(io: std.Io, a: std.mem.Allocator, cwd: std.Io.Dir, src: []const u8, dest: []const u8) !void {
+    cwd.rename(src, cwd, dest, io) catch return moveByCopy(io, a, cwd, src, dest);
+}
+
+fn moveByCopy(io: std.Io, a: std.mem.Allocator, cwd: std.Io.Dir, src: []const u8, dest: []const u8) !void {
+    const part = try std.mem.concat(a, u8, &.{ dest, ".part" });
+    var total: u64 = 0;
+    {
+        var in = try cwd.openFile(io, src, .{});
+        defer in.close(io);
+        const out = try cwd.createFile(io, part, .{});
+        defer out.close(io);
+        const buf = try a.alloc(u8, 64 * CF.kilo);
+        while (true) {
+            const n = try in.readPositionalAll(io, buf, total);
+            if (n == 0) break;
+            try out.writePositionalAll(io, buf[0..n], total);
+            total += n;
+            if (n < buf.len) break;
+        }
+    }
+    const st = try cwd.statFile(io, part, .{});
+    if (st.size != total) return error.CopyShort;
+    try std.Io.Dir.rename(cwd, part, cwd, dest, io);
+    try cwd.deleteFile(io, src);
+}
+
 // _yyMMdd_HHmmss from epoch seconds (name clash suffix, as the trash rule says)
 fn stamp(a: std.mem.Allocator, secs: i64) ![]const u8 {
     const es = std.time.epoch.EpochSeconds{ .secs = @intCast(@max(secs, 0)) };
@@ -158,7 +186,7 @@ fn moveGone(io: std.Io, a: std.mem.Allocator, rules: conf.Push, to: []const u8, 
             dest = try std.mem.concat(a, u8, &.{ dest, try stamp(a, now_secs) });
         } else |_| {}
         if (std.fs.path.dirname(dest)) |d| try cwd.createDirPath(io, d);
-        try std.Io.Dir.rename(cwd, src, cwd, dest, io);
+        try moveFile(io, a, cwd, src, dest);
     }
     return @intCast(gone.items.len);
 }
@@ -183,6 +211,26 @@ test "judge: allowlist gates, deny wins, anything unlisted is left out" {
 fn put(dir: std.Io.Dir, path: []const u8, data: []const u8) !void {
     if (std.fs.path.dirname(path)) |d| try dir.createDirPath(std.testing.io, d);
     try dir.writeFile(std.testing.io, .{ .sub_path = path, .data = data });
+}
+
+test "moveByCopy: the cross-disk path copies every byte of a multi-chunk file, then the source is gone" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const data = try a.alloc(u8, 150 * 1024 + 7);
+    for (data, 0..) |*b, i| b.* = @intCast(i % 251);
+    try tmp.dir.writeFile(io, .{ .sub_path = "from.bin", .data = data });
+    const base = try tmp.dir.realPathFileAlloc(io, ".", a);
+    const src = try std.fs.path.join(a, &.{ base, "from.bin" });
+    const dest = try std.fs.path.join(a, &.{ base, "to.bin" });
+    try moveByCopy(io, a, std.Io.Dir.cwd(), src, dest);
+    const got = try tmp.dir.readFileAlloc(io, "to.bin", a, .limited(1 << 20));
+    try std.testing.expectEqualSlices(u8, data, got);
+    try std.testing.expectError(error.FileNotFound, tmp.dir.access(io, "from.bin", .{}));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.access(io, "to.bin.part", .{}));
 }
 
 test "push refuses a source and repo folder that overlap, and a trash folder inside the repo folder" {

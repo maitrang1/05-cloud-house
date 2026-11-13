@@ -42,6 +42,8 @@ pub const Ctx = struct {
     home: []const u8,
     root: []const u8,
     conf_dirz: []const u8,
+    // the user's home folder (for {home} in key paths); the secret folder is `home` ----
+    user_home: []const u8 = "",
     live: bool = false,
     vaul: ?vault.Vault = null,
     // why the vault could not open, in plain words ----

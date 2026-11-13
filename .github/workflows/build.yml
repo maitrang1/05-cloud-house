@@ -24,10 +24,10 @@ jobs:
       ZIG_VERS: "0.16.0"
     steps:
       - id: CODE-PULL
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - id: ZIGZ-CASH
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/zig
           key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}
@@ -68,7 +68,7 @@ jobs:
       ZIG_VERS: "0.16.0"
     steps:
       - id: CODE-PULL
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - id: ZIGZ-INST
         run: |

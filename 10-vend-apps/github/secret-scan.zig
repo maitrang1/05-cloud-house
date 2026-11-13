@@ -10,7 +10,7 @@
 // =====================================================================
 const std = @import("std");
 
-const CF = .{ .kilo = 1024, .mega = 1024 * 1024 };
+const CF = .{ .kilo = 1024, .mega = 1024 * 1024, .overlap = 512 };
 
 pub const Mark = struct { pref: []const u8, tail: u32 = 0 };
 
@@ -18,7 +18,7 @@ pub const Rules = struct {
     name: []const []const u8 = &.{},
     mark: []const Mark = &.{},
     skip: []const []const u8 = &.{},
-    size_maxz_kbyt: u32 = 512,
+    wind_kbyt: u32 = 512,
     file_maxz_mbyt: u32 = 100,
 };
 
@@ -77,7 +77,7 @@ pub fn scan(io: std.Io, a: std.mem.Allocator, root: []const u8, paths: []const [
     var out: std.ArrayList(Find) = .empty;
     var dir = try std.Io.Dir.cwd().openDir(io, root, .{});
     defer dir.close(io);
-    const head_maxz: usize = @as(usize, rules.size_maxz_kbyt) * CF.kilo;
+    const head_maxz: usize = @max(@as(usize, rules.wind_kbyt) * CF.kilo, CF.overlap * 2);
     const buf = try a.alloc(u8, head_maxz);
     files: for (paths) |raw| {
         const path = try slashed(a, raw);
@@ -101,16 +101,46 @@ pub fn scan(io: std.Io, a: std.mem.Allocator, root: []const u8, paths: []const [
             continue;
         };
         defer f.close(io);
-        const n = f.readPositionalAll(io, buf, 0) catch {
-            try out.append(a, .{ .path = path, .kind = .unread, .rule = "cannot read" });
-            continue;
-        };
-        for (rules.mark) |m| if (markHit(buf[0..n], m)) {
-            try out.append(a, .{ .path = path, .kind = .mark, .rule = m.pref });
-            continue :files;
-        };
+        // the whole file, window by window; each window starts CF.overlap bytes before the last one ended, so a token on a boundary is whole in the next window ----
+        var off: u64 = 0;
+        while (true) {
+            const n = f.readPositionalAll(io, buf, off) catch {
+                try out.append(a, .{ .path = path, .kind = .unread, .rule = "cannot read" });
+                continue :files;
+            };
+            for (rules.mark) |m| if (markHit(buf[0..n], m)) {
+                try out.append(a, .{ .path = path, .kind = .mark, .rule = m.pref });
+                continue :files;
+            };
+            if (n < buf.len) break;
+            off += n - CF.overlap;
+        }
     }
     return out.toOwnedSlice(a);
+}
+
+test "scan reads the whole file: a token far past the first window and one straddling a window edge are found" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const tok = "ghp_" ++ "A" ** 36;
+    const pad = try a.alloc(u8, 5000);
+    @memset(pad, 'x');
+    const far = try std.mem.concat(a, u8, &.{ pad, " ", tok, " end" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "far.txt", .data = far });
+    const edge_at: usize = 1024 - 10; // the 1 KiB window ends inside the token
+    const edge = try std.mem.concat(a, u8, &.{ pad[0..edge_at], tok, pad[0..300] });
+    try tmp.dir.writeFile(io, .{ .sub_path = "edge.txt", .data = edge });
+    try tmp.dir.writeFile(io, .{ .sub_path = "clean.txt", .data = pad });
+    const root = try tmp.dir.realPathFileAlloc(io, ".", a);
+    const rules: Rules = .{ .mark = &.{.{ .pref = "ghp_", .tail = 30 }}, .wind_kbyt = 1 };
+    const got = try scan(io, a, root, &.{ "far.txt", "edge.txt", "clean.txt" }, rules);
+    try std.testing.expectEqual(@as(usize, 2), got.len);
+    try std.testing.expectEqualStrings("far.txt", got[0].path);
+    try std.testing.expectEqualStrings("edge.txt", got[1].path);
 }
 
 test "glob: stars, exact names, no runaway on many stars" {
@@ -146,7 +176,7 @@ test "scan finds a key file, a token and a big file; skip list and clean files p
     try tmp.dir.writeFile(io, .{ .sub_path = "big.bin", .data = "0123456789" ** 200 });
     var buf: [std.fs.max_path_bytes]u8 = undefined;
     const n = try tmp.dir.realPath(io, &buf);
-    const rules: Rules = .{ .name = &.{"*.pem"}, .mark = &.{.{ .pref = "gho_", .tail = 30 }}, .skip = &.{"fixture.*"}, .size_maxz_kbyt = 1, .file_maxz_mbyt = 0 };
+    const rules: Rules = .{ .name = &.{"*.pem"}, .mark = &.{.{ .pref = "gho_", .tail = 30 }}, .skip = &.{"fixture.*"}, .wind_kbyt = 1, .file_maxz_mbyt = 0 };
     const got = try scan(io, a, buf[0..n], &.{ "clean.txt", "sub/server.pem", "leak.md", "fixture.md", "gone.txt" }, rules);
     try std.testing.expectEqual(@as(usize, 4), got.len);
     try std.testing.expectEqual(Kind.big, got[0].kind);

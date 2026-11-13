@@ -34,8 +34,8 @@
     "logi": ["auth", "login", "--hostname", "{host}", "--device"],
     "toke": ["auth", "token", "--hostname", "{host}"]
   },
-  "ghcl": { "toke": ["auth", "token"] },
-  "sshz": { "file": "{home}/.ssh/id_ed25519_gitlab", "conf": "{home}/.ssh/config", "titl": "cloud-house", "user": "git", "veri": true },
+  "ghcl": { "toke": ["auth", "token"], "user": ["api", "user", "--jq", ".login"] },
+  "sshz": { "file": "{home}/.ssh/id_ed25519_gitlab", "titl": "cloud-house" },
   "prot": { "push": 30, "merg": 40, "forc": false },
   "toke": { "name": "mirror", "scop": ["write_repository"], "role": 30, "days": 90, "rota": 14 },
   "guid": { "open": true, "clip": true, "poll": 5, "wait": 900 },

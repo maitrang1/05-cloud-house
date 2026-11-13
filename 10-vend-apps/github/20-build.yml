@@ -23,7 +23,7 @@ jobs:
       ZIG_VERS: "@@ZIGVERS@@"
     steps:
       - id: CODE-PULL
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 @@CACHE@@
       - id: ZIGZ-INST
         run: |
@@ -62,7 +62,7 @@ jobs:
       ZIG_VERS: "@@ZIGVERS@@"
     steps:
       - id: CODE-PULL
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - id: ZIGZ-INST
         run: |

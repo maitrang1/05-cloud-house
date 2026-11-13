@@ -10,6 +10,7 @@
 // =====================================================================
 const std = @import("std");
 const rpush = @import("repo-push.zig");
+const sshc = @import("ssh-conf.zig");
 const api = @import("github-api.zig");
 const sshz = @import("ssh-key.zig");
 const scan = @import("secret-scan.zig");
@@ -119,15 +120,14 @@ pub fn sshzCommandPub(ctx: *Ctx) ![]const u8 {
     return sshzCommand(ctx);
 }
 
-// one word for git's shell: single quotes keep spaces and symbols (a Windows profile like "C:\Users\Dell 7750") in one piece ----
+// one word for git's shell: single quotes keep spaces and symbols (a Windows profile like "C:\\Users\\Dell 7750") in one piece ----
 fn shq(a: std.mem.Allocator, s: []const u8) ![]const u8 {
     return std.mem.concat(a, u8, &.{ "'", try std.mem.replaceOwned(u8, a, s, "'", "'\\''"), "'" });
 }
 
+// every ssh call goes through the app's private ssh config: the right key per host (see ssh-conf.zig) ----
 fn sshzCommand(ctx: *Ctx) ![]const u8 {
-    const priv = try shq(ctx.a, try ctx.keysPath(false));
-    const known = try shq(ctx.a, try std.mem.concat(ctx.a, u8, &.{ "UserKnownHostsFile=", try ctx.hostPath() }));
-    return std.fmt.allocPrint(ctx.a, "ssh -i {s} -o IdentitiesOnly=yes -o {s} -o StrictHostKeyChecking=accept-new", .{ priv, known });
+    return std.fmt.allocPrint(ctx.a, "ssh -F {s}", .{try shq(ctx.a, try sshc.sshPath(ctx))});
 }
 
 // ---- step 10: .gitignore, .gitattributes ----
@@ -165,7 +165,7 @@ fn wouldCommitFiles(ctx: *Ctx) ![]const []const u8 {
 fn scanRules(ctx: *Ctx, marks: []scan.Mark) scan.Rules {
     const mn = @min(ctx.conf.scan.mark.len, marks.len);
     for (ctx.conf.scan.mark[0..mn], 0..) |m, i| marks[i] = .{ .pref = m.pref, .tail = m.tail };
-    return .{ .name = ctx.conf.scan.name, .mark = marks[0..mn], .skip = ctx.conf.scan.skip, .size_maxz_kbyt = ctx.conf.scan.size_maxz_kbyt, .file_maxz_mbyt = ctx.conf.scan.file_maxz_mbyt };
+    return .{ .name = ctx.conf.scan.name, .mark = marks[0..mn], .skip = ctx.conf.scan.skip, .wind_kbyt = ctx.conf.scan.wind_kbyt, .file_maxz_mbyt = ctx.conf.scan.file_maxz_mbyt };
 }
 
 // ---- step 11: secret scan before the first push; read-only in chec mode, stages only when it acts ----
@@ -181,7 +181,7 @@ pub fn scanSecr(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if (mode == .chec) return .{ .wait = "risky files found" };
     var msg: std.ArrayList(u8) = .empty;
     for (found) |f| try msg.print(ctx.a, "{s}: {s} ({s})\n", .{ @tagName(f.kind), f.path, f.rule });
-    return ctxm.failCode(3, "a key-like or oversized file would be committed", msg.items, "add it to repo.root/.gitignore (or scan.skip in 00-config.json if it is a false positive), then run again");
+    return ctxm.failCode(3, "a key-like or oversized file would be committed", msg.items, "add it to the repo folder's .gitignore (or scan.skip in 00-config.json if it is a false positive), then run again");
 }
 
 fn repoRead(ctx: *Ctx) !?Repo {
@@ -234,18 +234,21 @@ pub fn repoMake(ctx: *Ctx, mode: Mode) anyerror!Outc {
     return .{ .done = try std.fmt.allocPrint(ctx.a, "{s} pushed", .{name}) };
 }
 
-// later edits: commit everything the mirror brought in and push it; nothing changed = nothing sent ----
+// later edits: commit what changed, then ALWAYS push: a remote that fell behind (a mirror that was down) catches up on the next run, and a push with nothing new costs one call ----
 pub fn publish(ctx: *Ctx) anyerror!Outc {
     const g = ctx.gitz(try sshzCommand(ctx));
     const st = try g.run(&.{ "status", "--porcelain" });
     if (!st.okay()) return ctxm.fail("cannot read the repo state", st.err, "check --root is the repo folder");
-    if (st.text().len == 0) return .{ .done = "nothing to publish" };
-    const add = try g.run(&.{ "add", "-A" });
-    if (!add.okay()) return ctxm.fail("cannot stage the files", add.err, "check the repo folder is writable");
-    const commit = try g.run(&.{ "commit", "-m", ctx.conf.repo.publ_text });
-    if (!commit.okay()) return ctxm.fail("cannot commit", commit.err, "check git identity (step 8)");
+    const changed = st.text().len > 0;
+    if (changed) {
+        const add = try g.run(&.{ "add", "-A" });
+        if (!add.okay()) return ctxm.fail("cannot stage the files", add.err, "check the repo folder is writable");
+        const commit = try g.run(&.{ "commit", "-m", ctx.conf.repo.publ_text });
+        if (!commit.okay()) return ctxm.fail("cannot commit", commit.err, "check git identity (step 8)");
+    }
     const push = try g.run(&.{ "push", ctx.conf.repo.remo, ctx.conf.repo.bran });
-    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the SSH key is uploaded (step 9) and the network works");
+    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the SSH key is uploaded (step 9) and the network works; the commit is kept and the next publish pushes again");
+    if (!changed) return .{ .done = "nothing to publish" };
     const head = try g.run(&.{ "rev-parse", "--short", "HEAD" });
     return .{ .done = try std.fmt.allocPrint(ctx.a, "published {s}", .{head.text()}) };
 }
@@ -368,6 +371,17 @@ test "publish: commits and pushes what changed, says nothing to publish when cle
     try tmp.dir.writeFile(io, .{ .sub_path = "work/a.txt", .data = "two" });
     _ = try publish(&c);
     try std.testing.expectEqualStrings("2", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
+    // a commit that never reached the remote (a mirror was down): the next publish is clean but still pushes it
+    try tmp.dir.writeFile(io, .{ .sub_path = "work/a.txt", .data = "three" });
+    try std.testing.expect((try c.gitz("").run(&.{ "commit", "-a", "-m", "local only" })).okay());
+    try std.testing.expectEqualStrings("2", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
+    const catchup = try publish(&c);
+    try std.testing.expect(catchup == .done and std.mem.eql(u8, catchup.done, "nothing to publish"));
+    try std.testing.expectEqualStrings("3", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
+    // an unreachable remote fails loudly, keeps the commit
+    try std.testing.expect((try c.gitz("").run(&.{ "remote", "set-url", "origin", "/no/such/remote.git" })).okay());
+    const down = try publish(&c);
+    try std.testing.expect(down == .fail);
 }
 
 test "rootGuard refuses a repo folder that holds the secret folder or sits in it, accepts a separate one" {
@@ -389,7 +403,7 @@ test "rootGuard refuses a repo folder that holds the secret folder or sits in it
     try std.testing.expect((try rootGuard(&c)) == null); // a sibling is fine
 }
 
-test "ssh command keeps a home folder with a space and a quote in one piece" {
+test "the git ssh command points at the private ssh config, quoted for a home folder with a space and a quote" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -398,8 +412,7 @@ test "ssh command keeps a home folder with a space and a quote in one piece" {
     var au: @import("audit-log.zig").Audit = .{ .a = a };
     var c: Ctx = .{ .io = std.testing.io, .a = a, .env = &env, .conf = .{}, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = "/Users/Dell 7750/it's", .root = "/r", .conf_dirz = "" };
     const cmd = try sshzCommand(&c);
-    try std.testing.expect(std.mem.indexOf(u8, cmd, "-i '/Users/Dell 7750/it'\\''s/github-keys/id_ed25519' ") != null);
-    try std.testing.expect(std.mem.indexOf(u8, cmd, "-o 'UserKnownHostsFile=/Users/Dell 7750/it'\\''s/github-known_hosts' ") != null);
+    try std.testing.expectEqualStrings("ssh -F '/Users/Dell 7750/it'\\''s/github-ssh_config'", cmd);
 }
 
 test "ensureRepo: makes a repo in a plain folder, accepts its own repo, refuses a folder inside another repo unless allowed" {
@@ -430,17 +443,5 @@ test "ensureRepo: makes a repo in a plain folder, accepts its own repo, refuses 
     try std.testing.expect((try ensureRepo(&c)) == null);
 }
 
-test "ssh command names the key, the known_hosts file and accepts new hosts only" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const a = arena.allocator();
-    var env = std.process.Environ.Map.init(a);
-    var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
-    var au: @import("audit-log.zig").Audit = .{ .a = a };
-    var c: Ctx = .{ .io = std.testing.io, .a = a, .env = &env, .conf = .{}, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = "/h", .root = "/r", .conf_dirz = "" };
-    const cmd = try sshzCommand(&c);
-    try std.testing.expect(std.mem.indexOf(u8, cmd, "/h/github-keys/id_ed25519") != null);
-    try std.testing.expect(std.mem.indexOf(u8, cmd, "StrictHostKeyChecking=accept-new") != null);
-}
 // ========================___THIS_IS_THE_END___========================
 // ===============___HOLD_YOUR_BREATH_AND_COUNT_TO_TEN___===============

@@ -23,7 +23,7 @@ Every key must be present. An unknown key stops the app and names the line and c
 | `data.vaul` / `stat` / `audi` / `acct` | vault, state, audit, private account file names | `forgejo-vault.json` · `forgejo-state.json` · `forgejo-audit.log` · `forgejo-account.json` | file names |
 | `vaul.envz` | env var holding the passphrase | `CLOUD_HOUSE_VAULT_PASS` | name |
 | `vaul.time` / `memo` / `para` | vault key cost | 3 · 65536 · 1 | numbers |
-| `repo.path` | the git checkout to add the push URL to | `/home/mai_trang/05-cloud-house-synch` (set to your own folder) | path |
+| `repo.path` | the git checkout to add the push URL to | `{home}/05-cloud-house-synch` (set to your own folder) | path |
 | `repo.bran` / `remo` | branch and remote | `main` · `origin` | names |
 | `repo.push` | push URL template | `ssh://git@{pubh}:{sshp}/{path}.git` | template |
 | `rele.base` / `vers` / `arch` | where and which release | Codeberg · `15.0.5` · `linux-amd64` | text, version required |

@@ -24,8 +24,8 @@ pub const Conf = struct {
     logi: struct { orde: []const []const u8 },
     tool: struct { gitz: []const u8, sshk: []const u8, sshz: []const u8, glab: []const u8, ghcl: []const u8, time: u32 },
     glab: struct { stat: []const []const u8, logi: []const []const u8, toke: []const []const u8 },
-    ghcl: struct { toke: []const []const u8 },
-    sshz: struct { file: []const u8, conf: []const u8, titl: []const u8, user: []const u8, veri: bool },
+    ghcl: struct { toke: []const []const u8, user: []const []const u8 },
+    sshz: struct { file: []const u8, titl: []const u8 },
     prot: struct { push: u32, merg: u32, forc: bool },
     toke: struct { name: []const u8, scop: []const []const u8, role: u32, days: u32, rota: u32 },
     guid: struct { open: bool, clip: bool, poll: u32, wait: u32 },
@@ -75,19 +75,20 @@ pub fn confLoad(gpa: std.mem.Allocator, io: std.Io, path: []const u8, diag: *Dia
     return confPars(gpa, text, diag);
 }
 
-// the private account file in the data folder fills gitl.user so no personal value sits in the synced config; a missing file changes nothing
+// the private account file in the data folder fills gitl.user and oaut.clid (your OAuth app id) so no personal value sits in the synced config; a missing file changes nothing
 pub fn acctOverride(gpa: std.mem.Allocator, io: std.Io, path: []const u8, conf: *Conf, diag: *Diag) Erro!void {
     const text = std.Io.Dir.cwd().readFileAlloc(io, path, gpa, .limited(CF.fileMaxz)) catch |erro| {
         if (erro == error.FileNotFound) return;
         diag.* = .{ .mess = @errorName(erro) };
         return error.ConfRead;
     };
-    const Acct = struct { user: []const u8 = "" };
+    const Acct = struct { user: []const u8 = "", clid: []const u8 = "" };
     const got = std.json.parseFromSliceLeaky(Acct, gpa, text, .{ .ignore_unknown_fields = false }) catch |erro| {
         diag.* = .{ .mess = @errorName(erro) };
         return error.ConfJson;
     };
     if (got.user.len > 0) conf.gitl.user = got.user;
+    if (got.clid.len > 0) conf.oaut.clid = got.clid;
 }
 
 // one name/value pair for tmplFill
@@ -174,9 +175,10 @@ test "account file fills gitl.user, a missing file changes nothing, an unknown k
     const path = try std.fs.path.join(gpa, &.{ dir, "gitlab-account.json" });
     try acctOverride(gpa, io, path, &conf, &diag);
     try std.testing.expectEqualStrings("", conf.gitl.user);
-    try tmp.dir.writeFile(io, .{ .sub_path = "gitlab-account.json", .data = "{\"user\":\"ann\"}" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "gitlab-account.json", .data = "{\"user\":\"ann\",\"clid\":\"app-id-123\"}" });
     try acctOverride(gpa, io, path, &conf, &diag);
     try std.testing.expectEqualStrings("ann", conf.gitl.user);
+    try std.testing.expectEqualStrings("app-id-123", conf.oaut.clid);
     try tmp.dir.writeFile(io, .{ .sub_path = "gitlab-account.json", .data = "{\"mail\":\"x\"}" });
     try std.testing.expectError(error.ConfJson, acctOverride(gpa, io, path, &conf, &diag));
 }

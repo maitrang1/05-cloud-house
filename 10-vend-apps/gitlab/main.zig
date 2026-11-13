@@ -12,6 +12,7 @@ const std = @import("std");
 const osyz = @import("os-thin.zig");
 const conf = @import("config-load.zig");
 const vaul = @import("vault-file.zig");
+const ghid = @import("gh-ident.zig");
 const stat = @import("state-file.zig");
 const audi = @import("audit-log.zig");
 const inpu = @import("line-input.zig");
@@ -97,13 +98,20 @@ fn runCmd(gpa: std.mem.Allocator, io: std.Io, cmd: Cmd, argv: []const []const u8
     var http1 = http.Http.init(gpa, io, &logz, .{ .trys = cfg.http.trys, .back = cfg.http.back, .maxw = cfg.http.maxw, .agen = cfg.http.agen, .maxb = cfg.http.maxb });
     defer http1.deinit();
     var gitl1 = gitl.Gitl{ .gpa = gpa, .http = &http1, .apiz = cfg.gitl.apiz, .oaut = cfg.gitl.oaut, .toke = vaul1.getz("gitl.token") orelse "" };
-    var gith1 = gith.Gith{ .gpa = gpa, .io = io, .http = &http1, .apiz = cfg.gith.apiz, .vers = cfg.gith.vers, .toke = vaul1.getz("gith.token") orelse "", .owne = vaul1.getz("gith.owner") orelse "", .repo = cfg.gitl.proj };
+    // the GitHub login and token come from `gh` when the vault has none (the GitHub app keeps no token in a vault any more)
+    const ghix = try ghid.read(gpa, &tool1, cfg.tool.ghcl, cfg.ghcl.toke, cfg.ghcl.user);
+    if (ghix.login.len > 0 and (vaul1.getz("gith.owner") == null or vaul1.getz("gith.user") == null)) {
+        try vaul1.putz("gith.owner", ghix.login);
+        try vaul1.putz("gith.user", ghix.login);
+        try vaul1.save();
+    }
+    var gith1 = gith.Gith{ .gpa = gpa, .io = io, .http = &http1, .apiz = cfg.gith.apiz, .vers = cfg.gith.vers, .toke = vaul1.getz("gith.token") orelse ghix.token, .owne = vaul1.getz("gith.owner") orelse "", .repo = cfg.gitl.proj };
 
     var eng1 = engi.Engi{ .gpa = gpa, .io = io, .stat = &stat1, .inpu = &queu, .guid = .{ .open = cfg.guid.open, .clip = cfg.guid.clip, .poll = cfg.guid.poll, .wait = cfg.guid.wait } };
 
     return switch (cmd) {
         .run => blk: {
-            var acctCtx = acct.Ctx{ .gpa = gpa, .conf = &cfg, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1 };
+            var acctCtx = acct.Ctx{ .gpa = gpa, .conf = &cfg, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1, .tool = &tool1 };
             eng1.runAll(&acct.rows(&acctCtx)) catch |erro| break :blk if (erro == engi.Stop.EngiStop) CF.exitHand else erro;
             var projCtx = proj.Ctx{ .gpa = gpa, .conf = &cfg, .vaul = &vaul1, .stat = &stat1, .tool = &tool1, .gitl = &gitl1 };
             eng1.runAll(&proj.rows(&projCtx)) catch |erro| break :blk if (erro == engi.Stop.EngiStop) CF.exitHand else erro;
@@ -179,6 +187,7 @@ test {
     _ = @import("http-call.zig");
     _ = @import("tool-exec.zig");
     _ = @import("line-input.zig");
+    _ = @import("gh-ident.zig");
     _ = @import("gitl-adapter.zig");
     _ = @import("gith-adapter.zig");
     _ = @import("gitl-contract.zig");

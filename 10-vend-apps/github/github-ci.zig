@@ -116,7 +116,7 @@ fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig
     }
     const tags: []const u8 = if (cf.tags) "    tags: ['v*']\n" else "";
     const cache: []const u8 = if (cf.cache)
-        "\n      - id: ZIGZ-CASH\n        uses: actions/cache@v4\n        with:\n          path: ~/.cache/zig\n          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}\n"
+        "\n      - id: ZIGZ-CASH\n        uses: actions/cache@v6\n        with:\n          path: ~/.cache/zig\n          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}\n"
     else
         "";
     const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@" };

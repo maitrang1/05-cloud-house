@@ -58,7 +58,6 @@
     "argo_para": 1
   },
   "repo": {
-    "root": "",
     "nest_okay": false,
     "name": "05-cloud-house",
     "visi": "public",
@@ -72,6 +71,14 @@
     "remo": "origin"
   },
   "tool": { "gitz": "git", "ghcl": "gh" },
+  "sshc": {
+    "file": "github-ssh_config",
+    "hosts": [
+      { "name": "github", "host": "github.com", "port": 22, "user": "git", "key": "{keys}/{keyz}" },
+      { "name": "gitlab", "host": "gitlab.com", "port": 22, "user": "git", "key": "{home}/.ssh/id_ed25519_gitlab" },
+      { "name": "forgejo", "host": "127.0.0.1", "port": 2222, "user": "git", "key": "{home}/.ssh/id_ed25519_forgejo" }
+    ]
+  },
   "gitz": {
     "scop": "local",
     "prot": "ssh",
@@ -112,7 +119,7 @@
       "10-vend-apps/gitlab/audit-log.zig",
       "10-vend-apps/oracle/co-audit.zig"
     ],
-    "size_maxz_kbyt": 512,
+    "wind_kbyt": 512,
     "file_maxz_mbyt": 100
   },
   "push": {

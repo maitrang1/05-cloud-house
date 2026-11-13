@@ -63,7 +63,6 @@ pub const Osiz = struct { brow_open: bool = true, clip_copy: bool = true, clip_c
 pub const Vaul = struct { pass_envz: []const u8 = "CLOUD_HOUSE_VAULT_PASS", argo_time: u32 = 3, argo_memo_kbyt: u32 = 65536, argo_para: u32 = 1 };
 
 pub const Repo = struct {
-    root: []const u8 = "",
     nest_okay: bool = false,
     name: []const u8 = "",
     visi: []const u8 = "private",
@@ -79,6 +78,12 @@ pub const Repo = struct {
 
 // the helper programs the app runs: name or full path ----
 pub const Tool = struct { gitz: []const u8 = "git", ghcl: []const u8 = "gh" };
+
+// one git host the app pushes to: its own key, port and user; a host whose key file does not exist yet is skipped ----
+pub const SshHost = struct { name: []const u8, host: []const u8, port: u32 = 22, user: []const u8 = "git", key: []const u8 };
+
+// the private ssh config the app writes (one Host block per row), used through `ssh -F` ----
+pub const Sshc = struct { file: []const u8 = "github-ssh_config", hosts: []const SshHost = &.{} };
 
 pub const Gitz = struct { scop: []const u8 = "local", prot: []const u8 = "ssh", crlf: []const u8 = "input", tmos_secs: u32 = 300 };
 
@@ -98,7 +103,7 @@ pub const Scan = struct {
     name: []const []const u8 = &.{},
     mark: []const Mark = &.{},
     skip: []const []const u8 = &.{},
-    size_maxz_kbyt: u32 = 512,
+    wind_kbyt: u32 = 512,
     file_maxz_mbyt: u32 = 100,
 };
 
@@ -145,6 +150,7 @@ pub const Conf = struct {
     vers: u32 = CF.vers,
     data: Data = .{},
     tool: Tool = .{},
+    sshc: Sshc = .{},
     http: Http = .{},
     auth: Auth = .{},
     acct: Acct = .{},
@@ -267,6 +273,13 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     for (c.push.skip_dirs) |d| if (d.len == 0 or std.mem.indexOfAny(u8, d, "/\\") != null) return bad("push.skip_dirs must be plain folder names", .{});
     if (c.repo.remo.len == 0 or std.mem.indexOfAny(u8, c.repo.remo, " /\\") != null) return bad("repo.remo must be a plain remote name like origin", .{});
     if (c.tool.gitz.len == 0 or c.tool.ghcl.len == 0) return bad("tool.gitz and tool.ghcl must not be empty", .{});
+    if (c.sshc.file.len == 0 or std.mem.indexOfAny(u8, c.sshc.file, "/\\") != null) return bad("sshc.file must be a plain file name", .{});
+    for (c.sshc.hosts, 0..) |h, i| {
+        if (h.name.len == 0 or h.host.len == 0 or h.key.len == 0) return bad("sshc.hosts rows need name, host and key", .{});
+        if (std.mem.indexOfAny(u8, h.host, " \t\"'#") != null or std.mem.indexOfAny(u8, h.user, " \t\"'#") != null) return bad("sshc.hosts host and user must be plain words", .{});
+        if (h.port < 1 or h.port > 65535) return bad("sshc.hosts port must be 1..65535", .{});
+        for (c.sshc.hosts[0..i]) |o| if (std.mem.eql(u8, o.name, h.name)) return bad("sshc.hosts names must be unique", .{});
+    }
     if (c.repo.bran.len == 0) return bad("repo.bran must not be empty", .{});
     if (!oneOf(c.gitz.scop, &.{ "local", "global" })) return bad("gitz.scop must be local or global", .{});
     if (!oneOf(c.gitz.prot, &.{ "ssh", "https" })) return bad("gitz.prot must be ssh or https", .{});

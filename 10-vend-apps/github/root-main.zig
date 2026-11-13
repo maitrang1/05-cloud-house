@@ -21,6 +21,7 @@ const acct = @import("github-account.zig");
 const repo = @import("github-repo.zig");
 const ci = @import("github-ci.zig");
 const rpush = @import("repo-push.zig");
+const sshc = @import("ssh-conf.zig");
 
 const CF = .{ .conf_file = "00-config.json", .step_file = "10-steps.json", .args_maxz = 64 };
 
@@ -203,7 +204,7 @@ pub fn main(init: std.process.Init) void {
     };
     var au: audit.Audit = .{ .a = a, .path = std.fs.path.join(a, &.{ home_full, cf.data.audi }) catch die(2) };
 
-    var ctx: ctxm.Ctx = .{ .io = io, .a = a, .env = env, .conf = cf, .steps = sf, .stat = &st, .audi = &au, .home = home_full, .root = parsed.root orelse "", .conf_dirz = std.fs.path.dirname(parsed.conf_path) orelse ".", .live = parsed.live };
+    var ctx: ctxm.Ctx = .{ .io = io, .a = a, .env = env, .conf = cf, .steps = sf, .stat = &st, .audi = &au, .home = home_full, .user_home = home, .root = parsed.root orelse "", .conf_dirz = std.fs.path.dirname(parsed.conf_path) orelse ".", .live = parsed.live };
 
     if (std.mem.eql(u8, parsed.cmd, "publish")) {
         const from = parsed.from orelse {
@@ -228,6 +229,10 @@ pub fn main(init: std.process.Init) void {
             out.say(io, "dry-run: nothing scanned, committed or pushed. Pass --live to publish.\n", .{});
             die(0);
         }
+        sshc.ensure(&ctx) catch |e| {
+            out.fail(io, "cannot write the ssh config", @errorName(e), "check the secret folder is writable");
+            die(1);
+        };
         // a failed reset only means the cached "clean" mark survives; the scan below still reads the files
         ctx.stat.putz("scan_okay", "") catch {};
         const scanned = repo.scanSecr(&ctx, .acts) catch |e| {
@@ -288,6 +293,10 @@ pub fn main(init: std.process.Init) void {
             out.say(io, "\ndry-run only. Pass --live for the first real run (it then resumes safely).\n", .{});
             die(0);
         }
+        sshc.ensure(&ctx) catch |e| {
+            out.fail(io, "cannot write the ssh config", @errorName(e), "check the secret folder is writable");
+            die(1);
+        };
         const rep = eng.run(&ctx, &TABLE, .acts) catch |e| {
             out.fail(io, "run failed", @errorName(e), "run the same command again");
             die(1);
@@ -316,6 +325,7 @@ test {
     _ = @import("github-repo.zig");
     _ = @import("github-ci.zig");
     _ = @import("repo-push.zig");
+    _ = @import("ssh-conf.zig");
     _ = @import("step-engine.zig");
 }
 // ========================___THIS_IS_THE_END___========================

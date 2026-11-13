@@ -64,7 +64,12 @@ pub const State = struct {
         const part = std.mem.concat(self.a, u8, &.{ self.path, CF.part }) catch return error.OutOfMemory;
         const cwd = std.Io.Dir.cwd();
         if (std.fs.path.dirname(self.path)) |d| cwd.createDirPath(io, d) catch return error.WriteFail;
-        cwd.writeFile(io, .{ .sub_path = part, .data = text }) catch return error.WriteFail;
+        // owner-only on POSIX (it holds the login and email); Windows keeps the profile folder's own access list ----
+        {
+            const f = cwd.createFile(io, part, if (comptime @import("builtin").os.tag == .windows) .{} else .{ .permissions = .fromMode(0o600) }) catch return error.WriteFail;
+            defer f.close(io);
+            f.writePositionalAll(io, text, 0) catch return error.WriteFail;
+        }
         cwd.rename(part, cwd, self.path, io) catch return error.WriteFail;
     }
 };
@@ -80,6 +85,27 @@ pub fn load(io: std.Io, a: std.mem.Allocator, path: []const u8) StatErro!State {
     try st.step.appendSlice(a, disk.step);
     try st.iden.appendSlice(a, disk.iden);
     return st;
+}
+
+test "the state file and the audit log are created owner-only" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const base = try tmp.dir.realPathFileAlloc(io, ".", a);
+    var st = try load(io, a, try std.fs.path.join(a, &.{ base, "s.json" }));
+    try st.putz("logi", "me");
+    try st.save(io);
+    var au: @import("audit-log.zig").Audit = .{ .a = a, .path = try std.fs.path.join(a, &.{ base, "a.jsonl" }) };
+    au.add(io, .{ .when = 1, .kind = "k", .verb = "v", .targ = "t" });
+    if (comptime @import("builtin").os.tag != .windows) {
+        for ([_][]const u8{ "s.json", "a.jsonl" }) |n| {
+            const stt = try tmp.dir.statFile(io, n, .{});
+            try std.testing.expectEqual(@as(u32, 0o600), @as(u32, @intCast(stt.permissions.toMode() & 0o777)));
+        }
+    }
 }
 
 test "fresh state, set, save, load again; a broken file is refused, never reset" {
