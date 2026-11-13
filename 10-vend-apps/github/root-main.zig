@@ -21,6 +21,7 @@ const acct = @import("github-account.zig");
 const repo = @import("github-repo.zig");
 const ci = @import("github-ci.zig");
 const rpush = @import("repo-push.zig");
+const gate = @import("test-gate.zig");
 const sshc = @import("ssh-conf.zig");
 
 const CF = .{ .conf_file = "00-config.json", .step_file = "10-steps.json", .args_maxz = 64 };
@@ -215,6 +216,19 @@ pub fn main(init: std.process.Init) void {
             out.fail(io, bad.fail.what, bad.fail.why, bad.fail.fix);
             die(2);
         }
+        if (cf.gate.cmd.len > 0 and !parsed.live) {
+            out.say(io, "gate: would run `{s} ...` in every app folder before publishing\n", .{cf.gate.cmd[0]});
+        } else if (parsed.live) {
+            var real: gate.Real = .{ .io = io, .a = a, .env = env, .tmos_secs = cf.gate.tmos_secs };
+            const red = gate.gate(io, a, cf.gate, cf.push.skip_dirs, from, gate.realRun, &real, &pushSay) catch |e| {
+                out.fail(io, "test gate failed to run", @errorName(e), "check --from is the work tree; set gate.cmd to [] in 00-config.json to turn the gate off");
+                die(1);
+            };
+            if (red) |f| {
+                out.fail(io, std.fmt.allocPrint(a, "tests are red in {s}", .{f.app}) catch "tests are red", if (f.tail.len > 0) f.tail else "the test command failed", "fix the test (run it in that folder), then publish again; nothing was mirrored or pushed");
+                die(1);
+            }
+        }
         const rep = rpush.push(io, a, cf.push, from, ctx.root, parsed.live, ctx.nowSecs(), &pushSay) catch |e| {
             out.fail(io, "mirror failed", @errorName(e), pushFix(e));
             die(1);
@@ -327,6 +341,7 @@ test {
     _ = @import("repo-push.zig");
     _ = @import("ssh-conf.zig");
     _ = @import("step-engine.zig");
+    _ = @import("test-gate.zig");
 }
 // ========================___THIS_IS_THE_END___========================
 // ===============___HOLD_YOUR_BREATH_AND_COUNT_TO_TEN___===============

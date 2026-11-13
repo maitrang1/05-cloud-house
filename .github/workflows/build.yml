@@ -86,6 +86,7 @@ jobs:
               (cd "$d" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
               mkdir -p "dist/${app}-${t}"
               find "$d/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${app}-${t}/" \;
+              [ -f LICENSE ] && cp LICENSE "dist/${app}-${t}/"
               case "$t" in
                 *windows*) (cd dist && zip -qr "${app}-${t}.zip" "${app}-${t}") ;;
                 *) tar -czf "dist/${app}-${t}.tar.gz" -C dist "${app}-${t}" ;;

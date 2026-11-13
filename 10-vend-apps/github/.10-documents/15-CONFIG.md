@@ -30,13 +30,15 @@ Every key has a default. An unknown key stops the app and names the line and col
 | `repo.nest_okay` | allow a repo inside another repo | `false` | true, false |
 | `tool.gitz` / `ghcl` | programs to run | `git` · `gh` | names or paths |
 | `sshc.file` / `hosts` | private ssh config and one row per git host (`name`, `host`, `port`, `user`, `key`) | GitHub, GitLab, Forgejo rows | `key` may use `{keys}`, `{keyz}`, `{home}` |
-| `sshz.keyz_name` / `titl` | SSH key file name and its title on GitHub | `id_ed25519` · `cloud-house` | text |
+| `sshz.keyz_name` / `titl` | SSH key file name and its title on GitHub | `id_ed25519_deploy` · `cloud-house` | text |
+| `sshz.kind` | where the key lives: `deploy` = this one repo only (safer), `account` = your whole GitHub account | `deploy` | deploy, account |
 | `file.igno` / `attr` | lines for `.gitignore` and `.gitattributes` | see file | lists |
 | `scan.name` / `mark` | file names and text shapes that count as secrets | see file | lists |
 | `scan.skip` | exact paths the scan ignores (known false alarms) | 8 test files | list |
 | `scan.wind_kbyt` / `file_maxz_mbyt` | read window, biggest file | 512 · 100 | numbers |
 | `push.skip_dirs` | folders never copied | `.git`, `.github`, `zig-out`, `node_modules`, `.10-docs`, … | names |
-| `push.allo` / `deny` | files that may be copied / never copied | source, config templates, docs | patterns |
+| `push.allo` / `deny` | files that may be copied / never copied | source, config templates, docs, root `LICENSE` + `README.md` | patterns |
+| `gate.cmd` / `tmos_secs` / `retr` | tests that must pass before a live publish (run in every app folder), time limit per app, retries of a red app (0..3); an empty `cmd` turns the gate off | `zig build test` · 900 · 1 | list, seconds, number |
 | `push.keep` | files in the copy the mirror never moves | `.gitignore`, `.gitattributes` | patterns |
 | `push.trash` | where removed files go | `{home}/00_modules/zzzz-delete-force-items/05-cloud-house-synch` | path |
 | `rule.*` | branch rule: block deletion, block force push | on | true, false |

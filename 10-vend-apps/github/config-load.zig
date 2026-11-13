@@ -88,7 +88,8 @@ pub const Sshc = struct { file: []const u8 = "github-ssh_config", hosts: []const
 pub const Gitz = struct { scop: []const u8 = "local", prot: []const u8 = "ssh", crlf: []const u8 = "input", tmos_secs: u32 = 300 };
 
 pub const Sshz = struct {
-    keyz_name: []const u8 = "id_ed25519",
+    keyz_name: []const u8 = "id_ed25519_deploy",
+    kind: []const u8 = "deploy",
     titl: []const u8 = "cloud-house",
     host_test: bool = true,
     host_user: []const u8 = "git@github.com",
@@ -135,6 +136,9 @@ pub const Ghcr = struct { onzz: bool = false };
 
 pub const Mirr = struct { name: []const u8, urlz: []const u8, onzz: bool = false };
 
+// tests that must pass before a live publish; an empty cmd turns the gate off ----
+pub const Gate = struct { cmd: []const []const u8 = &.{}, tmos_secs: u32 = 900, retr: u32 = 1 };
+
 pub const Push = struct {
     skip_dirs: []const []const u8 = &.{},
     allo: []const []const u8 = &.{},
@@ -168,6 +172,7 @@ pub const Conf = struct {
     ghcr: Ghcr = .{},
     mirr: []const Mirr = &.{},
     push: Push = .{},
+    gate: Gate = .{},
     warn: Warn = .{},
 };
 
@@ -286,6 +291,8 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (!oneOf(c.gitz.crlf, &.{ "input", "false", "true" })) return bad("gitz.crlf must be input, false or true", .{});
     if (c.gitz.tmos_secs < 5) return bad("gitz.tmos_secs must be 5 or more", .{});
     if (c.sshz.keyz_name.len == 0 or std.mem.indexOfAny(u8, c.sshz.keyz_name, "/\\") != null) return bad("sshz.keyz_name must be a plain file name", .{});
+    if (!oneOf(c.sshz.kind, &.{ "deploy", "account" })) return bad("sshz.kind must be deploy or account", .{});
+    if (c.gate.tmos_secs < 10 or c.gate.retr > 3) return bad("gate.tmos_secs must be 10 or more and gate.retr 0..3", .{});
     if (c.warn.perc < 1 or c.warn.perc > 100) return bad("warn.perc must be 1..100", .{});
     for (c.scan.mark) |m| if (m.pref.len < 4) return bad("scan.mark pref must be 4 letters or more", .{});
     if (c.ciiz.runs_on.len == 0 or c.ciiz.zig_vers.len == 0 or c.ciiz.zig_base.len == 0) return bad("ciiz.runs_on, zig_vers and zig_base must not be empty", .{});
@@ -364,6 +371,11 @@ test "unknown key is refused with line and column; bad values are refused" {
     c = .{};
     c.vaul.argo_memo_kbyt = 1;
     try std.testing.expectError(error.BadValue, check(&c, false));
+    c = .{};
+    c.sshz.kind = "repo";
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c.sshz.kind = "account";
+    try check(&c, false);
 }
 
 test "account.json fills logi and mail; a missing file changes nothing; an unknown key is refused" {

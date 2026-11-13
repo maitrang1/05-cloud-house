@@ -11,7 +11,7 @@ Oracle gives every new account a small always-on Linux computer for free. Settin
 ---
 
 ## Requirements
-- Windows 10 or later, or Linux (x86_64)
+- Windows 10 or later, or Linux (x86_64 control PC; the VM itself is Arm or x86)
 - A card for Oracle sign-up (Oracle holds a small amount to check you are real)
 - `openssl` on your PC to make the key (Linux has it; Windows users can point to a key file instead)
 - Nothing else. No install.
@@ -44,3 +44,8 @@ Everything lives in one folder, `~/.05-cloud-house-secre`: the locked vault, a p
 - **`10-HOW-TO.md`**: every step, one tiny action at a time
 - **`15-CONFIG.md`**: every setting
 - **`20-UPDATE.md`**: what changed, by date
+
+---
+
+## License
+PolyForm Noncommercial 1.0.0. Free for personal and noncommercial use (hobby, study, research, charity). Using it in a business or for profit needs a paid commercial license: open an issue at https://github.com/maitrang1/05-cloud-house/issues. Full text: `25-LICENSE`.

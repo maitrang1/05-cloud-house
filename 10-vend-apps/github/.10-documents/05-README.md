@@ -48,3 +48,8 @@ Your passphrase locks one encrypted file in `~/.05-cloud-house-secre/`. Your log
 - **`10-HOW-TO.md`** — every task, step by step
 - **`15-CONFIG.md`** — every setting and file
 - **`20-UPDATE.md`** — what changed, by date
+
+---
+
+## License
+PolyForm Noncommercial 1.0.0. Free for personal and noncommercial use (hobby, study, research, charity). Using it in a business or for profit needs a paid commercial license: open an issue at https://github.com/maitrang1/05-cloud-house/issues. Full text: `25-LICENSE`.

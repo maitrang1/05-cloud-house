@@ -1,21 +1,28 @@
-MIT License
+cloud-house License
+Required Notice: Copyright (c) 2026 maitrang1 (https://github.com/maitrang1/05-cloud-house)
 
-Copyright (c) 2026 maitrang1
+This is a plain-English version of the PolyForm Noncommercial License 1.0.0
+(https://polyformproject.org/licenses/noncommercial/1.0.0).
+If anything below is unclear, that official text decides.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+THE SHORT VERSION
+Free for personal and noncommercial use. Making money with it? Get a paid commercial license from me first.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+WHAT YOU CAN DO FOR FREE
+- Use, copy, study and tweak it for personal stuff: learning, testing, hobby projects, private use.
+- Use it as a school, university, public research group, charity, or government office.
+- Share it, as long as you hand over this license and the "Required Notice" line above with it.
+- Share your changes, too, under these same terms.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+WHAT NEEDS A PAID LICENSE
+- Using it in a business, for a client, or to make money in any way.
+- Selling it, or selling a service built on it.
+Ask for a commercial license by opening an issue at https://github.com/maitrang1/05-cloud-house/issues.
+
+THE FINE PRINT
+- Doing something above that isn't allowed here means you have no license, and that's copyright infringement.
+- Break the rules by accident? You get 32 days to fix it after I tell you, and your license comes back. Do it again after that, and it doesn't.
+- If you sue anyone claiming this software infringes your patent, your license ends.
+- Whatever patents I hold on it are licensed to you for the same free uses above, and nothing else.
+- Anything the law lets you do anyway (like fair use) still stands.
+- It's provided as is. No warranty, and I'm not liable for any damage from using it.

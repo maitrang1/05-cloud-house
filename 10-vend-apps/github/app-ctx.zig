@@ -239,8 +239,8 @@ test "repo name comes from the folder unless the config names one; paths join un
     try std.testing.expectEqualStrings("cloud-house", c.repoName());
     c.conf.repo.name = "other";
     try std.testing.expectEqualStrings("other", c.repoName());
-    try std.testing.expect(std.mem.endsWith(u8, try c.keysPath(true), "id_ed25519.pub"));
-    try std.testing.expect(std.mem.endsWith(u8, try c.keysPath(false), "id_ed25519"));
+    try std.testing.expect(std.mem.endsWith(u8, try c.keysPath(true), "id_ed25519_deploy.pub"));
+    try std.testing.expect(std.mem.endsWith(u8, try c.keysPath(false), "id_ed25519_deploy"));
 }
 
 test "vault opens from the named environment variable; a wrong one says why" {

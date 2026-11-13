@@ -85,8 +85,10 @@
     "crlf": "input",
     "tmos_secs": 300
   },
+  "gate": { "cmd": ["zig", "build", "test"], "tmos_secs": 900, "retr": 1 },
   "sshz": {
-    "keyz_name": "id_ed25519",
+    "keyz_name": "id_ed25519_deploy",
+    "kind": "deploy",
     "titl": "cloud-house",
     "host_test": true,
     "host_user": "git@github.com",
@@ -124,7 +126,7 @@
   },
   "push": {
     "skip_dirs": [".git", ".github", "zig-out", ".zig-cache", "node_modules", ".10-docs", ".05-docs-core", ".15-docs-flow", "zzzz-delete-force-items", ".claude", ".secrets", ".99-secret-root", "test-data"],
-    "allo": ["*.zig", "*.zon", "*00-config.json", "*df-*.json", "*10-steps.json", "*.yml", "*.mjs", "*/package.json", "*/package-lock.json", "*.10-documents/*", "*read-only.json", "*te-*.json", "*te-*.csv", "*df-*.js"],
+    "allo": ["*.zig", "*.zon", "*00-config.json", "*df-*.json", "*10-steps.json", "*.yml", "*.mjs", "*/package.json", "*/package-lock.json", "*.10-documents/*", "*read-only.json", "*te-*.json", "*te-*.csv", "*df-*.js", "LICENSE", "README.md"],
     "deny": ["*.vault", "*.key", "*.pem", "*.env", "*.env.*", "*id_ed25519*", "*id_rsa*"],
     "keep": [".gitignore", ".gitattributes"],
     "trash": "{home}/00_modules/zzzz-delete-force-items/05-cloud-house-synch",

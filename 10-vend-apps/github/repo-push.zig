@@ -208,6 +208,13 @@ test "judge: allowlist gates, deny wins, anything unlisted is left out" {
     try std.testing.expectEqual(Verdict.other, judge(.{}, "main.zig"));
 }
 
+test "judge: root LICENSE and README.md are taken, same names deeper are not" {
+    const r: conf.Push = .{ .allo = &.{ "LICENSE", "README.md" } };
+    try std.testing.expectEqual(Verdict.take, judge(r, "LICENSE"));
+    try std.testing.expectEqual(Verdict.take, judge(r, "README.md"));
+    try std.testing.expectEqual(Verdict.other, judge(r, "app/README.md"));
+}
+
 fn put(dir: std.Io.Dir, path: []const u8, data: []const u8) !void {
     if (std.fs.path.dirname(path)) |d| try dir.createDirPath(std.testing.io, d);
     try dir.writeFile(std.testing.io, .{ .sub_path = path, .data = data });

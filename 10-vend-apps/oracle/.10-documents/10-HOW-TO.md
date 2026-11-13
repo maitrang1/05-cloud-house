@@ -93,7 +93,7 @@ EXE drift
 `drift: none` means all good. Exit code 3 means a firewall door you did not set, or the computer is not running. The program never removes anything; look in the Oracle console.
 
 ## 9. Put your own program on the computer
-Do this before the first `run --live`. Open `00-config.json` and set `boot.urlz` (where to download your program) and `boot.sha2` (its sha256 fingerprint). The computer reads them once, on its first start. Changing them later does not touch a computer that already exists.
+Do this before the first `run --live`. Open `00-config.json` and set `boot.urlz` (where to download your program) and `boot.sha2` (its sha256 fingerprint). The default VM is Arm, so also set `boot.urla` and `boot.sh2a` for the Arm build of your program. The computer reads them once, on its first start. Changing them later does not touch a computer that already exists.
 
 ## 10. Stop using the keys
 ```

@@ -35,7 +35,7 @@ pub fn cloudInit(gpa: std.mem.Allocator, cfg: *const conf.Conf) ![]u8 {
     const port = try std.fmt.allocPrint(gpa, "{d}", .{appPort(cfg)});
     const busy = try std.fmt.allocPrint(gpa, "{d}", .{@max(CF.busyMinz, cfg.keep.secs * cfg.keep.duty / 100)});
     const secs = try std.fmt.allocPrint(gpa, "{d}", .{cfg.keep.secs});
-    const base = [_]conf.Pair{ .{ "svcu", cfg.boot.svcu }, .{ "svcn", cfg.boot.svcn }, .{ "bina", cfg.boot.bina }, .{ "args", cfg.boot.args }, .{ "urlz", cfg.boot.urlz }, .{ "sha2", cfg.boot.sha2 }, .{ "port", port }, .{ "busy", busy }, .{ "secs", secs } };
+    const base = [_]conf.Pair{ .{ "svcu", cfg.boot.svcu }, .{ "svcn", cfg.boot.svcn }, .{ "bina", cfg.boot.bina }, .{ "args", cfg.boot.args }, .{ "urlz", cfg.boot.urlz }, .{ "sha2", cfg.boot.sha2 }, .{ "urla", cfg.boot.urla }, .{ "sh2a", cfg.boot.sh2a }, .{ "port", port }, .{ "busy", busy }, .{ "secs", secs } };
     const unit = try conf.linzFill(gpa, cfg.unit, &base);
     const keep: []const u8 = if (cfg.keep.on) try conf.linzFill(gpa, cfg.kunit, &base) else "";
     var all: [base.len + 2]conf.Pair = undefined;
@@ -158,11 +158,14 @@ test "cloud-init holds the app user, port and unit; the heartbeat only when on" 
     var cfg = try conf.confLoad(gpa, std.testing.io, "00-config.json", &diag);
     cfg.boot.urlz = "https://example.test/app";
     cfg.boot.sha2 = "abc123";
+    cfg.boot.urla = "https://example.test/app-arm";
+    cfg.boot.sh2a = "def456";
     const off = try cloudInit(gpa, &cfg);
     try std.testing.expect(std.mem.indexOf(u8, off, "useradd --system --create-home --shell /usr/sbin/nologin chouse") != null);
     try std.testing.expect(std.mem.indexOf(u8, off, "--dport 8080") != null);
     try std.testing.expect(std.mem.indexOf(u8, off, "ExecStart=/usr/local/bin/cloud-house-app") != null);
-    try std.testing.expect(std.mem.indexOf(u8, off, "abc123  /tmp/cloud-house-app.bin") != null);
+    try std.testing.expect(std.mem.indexOf(u8, off, "SHA=\"abc123\"") != null); // x86_64 binary
+    try std.testing.expect(std.mem.indexOf(u8, off, "= aarch64 ]; then URL=\"https://example.test/app-arm\"; SHA=\"def456\"") != null); // Arm binary
     try std.testing.expect(std.mem.indexOf(u8, off, "keep.timer") == null);
     try std.testing.expect(std.mem.indexOf(u8, off, "{") == null or std.mem.indexOf(u8, off, "{unit}") == null);
     cfg.keep.on = true;

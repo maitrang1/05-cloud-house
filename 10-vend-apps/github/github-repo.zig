@@ -1,6 +1,6 @@
 // =====================================================================
 // Des: The repo half of the GitHub setup - git identity, SSH key, ignore files, a secret scan, the first push, repo settings and branch rules
-// Flo: git config > ed25519 key > upload to the account > .gitignore/.gitattributes > scan staged files > create+commit+push > settings > rule (or skip)
+// Flo: git config > ed25519 key (file only for the deploy kind) > .gitignore/.gitattributes > scan > create repo > add the repo deploy key (or upload to the account) > commit+push > .gitignore/.gitattributes > scan staged files > create+commit+push > settings > rule (or skip)
 // Cre: 2026-11-12                          - | Mod: 2026-11-12
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: Ctx, Mode (chec = read-only look, acts = do it)
@@ -22,6 +22,8 @@ const Outc = ctxm.Outc;
 const CF = .{ .seed_keyz = "sshz.seed", .chec_keyz = "sshz.chec", .ghcr_host = "ghcr.io" };
 
 const KeyzRow = struct { key: []const u8 = "" };
+const DeployRow = struct { key: []const u8 = "", read_only: bool = true };
+const Deploy = enum { absent, readonly, writable };
 const Repo = struct { name: []const u8 = "", default_branch: []const u8 = "", private: bool = false, has_wiki: bool = false, has_projects: bool = false, delete_branch_on_merge: bool = false, visibility: []const u8 = "" };
 const Rule = struct { id: u64 = 0, name: []const u8 = "", target: []const u8 = "" };
 
@@ -89,7 +91,9 @@ pub fn sshzKeyz(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const priv_path = try ctx.keysPath(false);
     const publ_path = try ctx.keysPath(true);
     const have_file = std.Io.Dir.cwd().access(ctx.io, priv_path, .{}) catch null != null;
+    const deploy = std.mem.eql(u8, ctx.conf.sshz.kind, "deploy");
     if (have_file) {
+        if (deploy) return .{ .done = "key file is ready (step 12 adds it to the repo)" };
         const publ = std.Io.Dir.cwd().readFileAlloc(ctx.io, publ_path, ctx.a, .limited(4096)) catch return ctxm.fail("the public key file is unreadable", publ_path, "run the same command again");
         const seen = keysListed(ctx, publ) catch |e| {
             if (e != error.KeysRefused) return e;
@@ -111,9 +115,41 @@ pub fn sshzKeyz(ctx: *Ctx, mode: Mode) anyerror!Outc {
         f.writePositionalAll(ctx.io, pair.priv, 0) catch return ctxm.fail("cannot write the private key", priv_path, "check the folder is writable");
     }
     cwd.writeFile(ctx.io, .{ .sub_path = publ_path, .data = pair.publ }) catch return ctxm.fail("cannot write the public key", publ_path, "check the folder is writable");
+    if (deploy) return .{ .done = "key made (step 12 adds it to the repo)" };
     const r = try api.call(ctx, .POST, "/user/keys", try api.json(ctx, .{ .title = ctx.conf.sshz.titl, .key = std.mem.trim(u8, pair.publ, " \r\n") }), true);
     if (!r.okay()) return api.refuse(ctx, r, "cannot upload the SSH key");
     return .{ .done = "key made and uploaded" };
+}
+
+// ---- the repo's own key: write access to this one repo only ----
+fn deployPath(a: std.mem.Allocator, owner: []const u8, name: []const u8) ![]const u8 {
+    return std.mem.concat(a, u8, &.{ "/repos/", owner, "/", try api.enc(a, name), "/keys" });
+}
+
+fn deployState(list: []const DeployRow, publ: []const u8) Deploy {
+    const bare = sshz.bare(publ);
+    for (list) |k| if (std.mem.eql(u8, sshz.bare(k.key), bare)) return if (k.read_only) .readonly else .writable;
+    return .absent;
+}
+
+// deploy kind only: add the key once (listed first, so a rerun adds nothing); the account kind has nothing to do here ----
+fn deployKey(ctx: *Ctx) anyerror!?Outc {
+    if (!std.mem.eql(u8, ctx.conf.sshz.kind, "deploy")) return null;
+    const publ_path = try ctx.keysPath(true);
+    const publ = std.Io.Dir.cwd().readFileAlloc(ctx.io, publ_path, ctx.a, .limited(4096)) catch return ctxm.fail("the public key file is unreadable", publ_path, "run the same command again (step 9 makes the key)");
+    const path = try deployPath(ctx.a, try repoOwner(ctx), ctx.repoName());
+    const r = try api.getz(ctx, path);
+    if (!r.okay()) return api.refuse(ctx, r, "cannot list the repo's deploy keys");
+    const list = api.read([]const DeployRow, ctx, r.body) orelse &.{};
+    switch (deployState(list, publ)) {
+        .writable => return null,
+        .readonly => return ctxm.fail("the repo's deploy key is read-only", "publishing needs write access", "remove it in the repo's Settings > Deploy keys, then run the same command again"),
+        .absent => {},
+    }
+    const c = try api.call(ctx, .POST, path, try api.json(ctx, .{ .title = ctx.conf.sshz.titl, .key = std.mem.trim(u8, publ, " \r\n"), .read_only = false }), true);
+    if (c.code == 422) return ctxm.fail("cannot add the deploy key", "GitHub says this key is already used (on the account or another repo)", "set sshz.keyz_name in 00-config.json to a new file name, then run the same command again");
+    if (!c.okay()) return api.refuse(ctx, c, "cannot add the deploy key");
+    return null;
 }
 
 pub fn sshzCommandPub(ctx: *Ctx) ![]const u8 {
@@ -219,6 +255,7 @@ pub fn repoMake(ctx: *Ctx, mode: Mode) anyerror!Outc {
         if (!r.okay()) return api.refuse(ctx, r, "cannot create the repo");
     }
     if (!std.mem.eql(u8, ctx.stat.valu("scan_okay"), "yes")) return ctxm.fail("secret scan has not run", "step 11 must pass before any push", "run the same command again");
+    if (try deployKey(ctx)) |o| return o;
     if (!(try remoteOkay(ctx))) {
         const url = try std.fmt.allocPrint(ctx.a, "{s}:{s}/{s}.git", .{ ctx.conf.sshz.host_user, try repoOwner(ctx), name });
         const r = try g.run(&.{ "remote", "add", ctx.conf.repo.remo, url });
@@ -230,7 +267,7 @@ pub fn repoMake(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const branch = try g.run(&.{ "branch", "-M", ctx.conf.repo.bran });
     if (!branch.okay()) return ctxm.fail("cannot name the branch", branch.err, "check git is installed");
     const push = try g.run(&.{ "push", "-u", ctx.conf.repo.remo, ctx.conf.repo.bran });
-    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the SSH key is uploaded (step 9) and the key's known_hosts is writable");
+    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the key is on the repo (step 12) and known_hosts is writable");
     return .{ .done = try std.fmt.allocPrint(ctx.a, "{s} pushed", .{name}) };
 }
 
@@ -247,7 +284,7 @@ pub fn publish(ctx: *Ctx) anyerror!Outc {
         if (!commit.okay()) return ctxm.fail("cannot commit", commit.err, "check git identity (step 8)");
     }
     const push = try g.run(&.{ "push", ctx.conf.repo.remo, ctx.conf.repo.bran });
-    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the SSH key is uploaded (step 9) and the network works; the commit is kept and the next publish pushes again");
+    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the key is on the repo (run `github run --live` once) and the network works; the commit is kept and the next publish pushes again");
     if (!changed) return .{ .done = "nothing to publish" };
     const head = try g.run(&.{ "rev-parse", "--short", "HEAD" });
     return .{ .done = try std.fmt.allocPrint(ctx.a, "published {s}", .{head.text()}) };
@@ -316,6 +353,20 @@ pub fn ruleBran(ctx: *Ctx, mode: Mode) anyerror!Outc {
     }
     if (!r.okay()) return api.refuse(ctx, r, "cannot create the branch rule");
     return .{ .done = "rule created" };
+}
+
+test "deploy key: repo path, listing says absent, read-only or writable" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    try std.testing.expectEqualStrings("/repos/me/05-cloud-house/keys", try deployPath(a, "me", "05-cloud-house"));
+    const mine = "ssh-ed25519 AAAAmine cloud-house\n";
+    const rows = [_]DeployRow{ .{ .key = "ssh-ed25519 AAAAother x", .read_only = false }, .{ .key = "ssh-ed25519 AAAAmine", .read_only = true } };
+    try std.testing.expectEqual(Deploy.absent, deployState(&.{}, mine));
+    try std.testing.expectEqual(Deploy.absent, deployState(rows[0..1], mine));
+    try std.testing.expectEqual(Deploy.readonly, deployState(&rows, mine));
+    const rw = [_]DeployRow{.{ .key = "ssh-ed25519 AAAAmine other-comment", .read_only = false }};
+    try std.testing.expectEqual(Deploy.writable, deployState(&rw, mine));
 }
 
 test "ruleTypes follows config flags, in order, with none when all are off" {

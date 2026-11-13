@@ -28,6 +28,7 @@ fn fill(a: std.mem.Allocator, text: []const u8, keys_dir: []const u8, keyz: []co
     return std.mem.replaceOwned(u8, a, two, "{home}", user_home);
 }
 
+// each block answers to the alias AND the real host name: git urls say git@github.com, so a block named only "github" never matched and the key was never used
 // the whole file text; `have` says whether a key file exists (so tests need no disk) ----
 pub fn build(a: std.mem.Allocator, hosts: []const conf.SshHost, keys_dir: []const u8, keyz: []const u8, user_home: []const u8, known: []const u8, have: *const fn (ctx: ?*anyopaque, path: []const u8) bool, ctx: ?*anyopaque) ![]u8 {
     var out: std.ArrayList(u8) = .empty;
@@ -35,7 +36,7 @@ pub fn build(a: std.mem.Allocator, hosts: []const conf.SshHost, keys_dir: []cons
     for (hosts) |h| {
         const key = try slashed(a, try fill(a, h.key, keys_dir, keyz, user_home));
         if (!have(ctx, key)) continue;
-        try out.print(a, "Host {s}\n  HostName {s}\n  Port {d}\n  User {s}\n  IdentityFile \"{s}\"\n  IdentitiesOnly yes\n", .{ h.name, h.host, h.port, h.user, key });
+        try out.print(a, "Host {s} {s}\n  HostName {s}\n  Port {d}\n  User {s}\n  IdentityFile \"{s}\"\n  IdentitiesOnly yes\n", .{ h.name, h.host, h.host, h.port, h.user, key });
     }
     try out.print(a, "Host *\n  UserKnownHostsFile \"{s}\"\n  StrictHostKeyChecking accept-new\n", .{try slashed(a, known)});
     return out.items;
@@ -88,9 +89,9 @@ test "build: one block per host with its key, a row without a key file is skippe
         .{ .name = "forgejo", .host = "127.0.0.1", .port = 2222, .key = "{home}/.ssh/id_ed25519_forgejo" },
     };
     const text = try build(a, &hosts, "C:\\Users\\Dell 7750\\.05-cloud-house-secre\\github-keys", "id_ed25519", "C:\\Users\\Dell 7750", "C:\\Users\\Dell 7750\\known", &onlyGit, null);
-    try std.testing.expect(std.mem.indexOf(u8, text, "Host github\n  HostName github.com\n  Port 22\n  User git\n  IdentityFile \"C:/Users/Dell 7750/.05-cloud-house-secre/github-keys/id_ed25519\"\n  IdentitiesOnly yes\n") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "Host github github.com\n  HostName github.com\n  Port 22\n  User git\n  IdentityFile \"C:/Users/Dell 7750/.05-cloud-house-secre/github-keys/id_ed25519\"\n  IdentitiesOnly yes\n") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "Host gitlab") == null); // key file missing: no block
-    try std.testing.expect(std.mem.indexOf(u8, text, "Host forgejo\n  HostName 127.0.0.1\n  Port 2222\n") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "Host forgejo 127.0.0.1\n  HostName 127.0.0.1\n  Port 2222\n") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "Host *\n  UserKnownHostsFile \"C:/Users/Dell 7750/known\"\n  StrictHostKeyChecking accept-new\n") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "\\") == null); // no backslash anywhere
     const all = try build(a, &hosts, "/k", "id_ed25519", "/h", "/known", &yes, null);
@@ -106,7 +107,7 @@ test "ensure: writes the file once with owner-only rights, a second call leaves 
     defer tmp.cleanup();
     const base = try tmp.dir.realPathFileAlloc(io, ".", a);
     try tmp.dir.createDirPath(io, "sec/github-keys");
-    try tmp.dir.writeFile(io, .{ .sub_path = "sec/github-keys/id_ed25519", .data = "k" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "sec/github-keys/id_ed25519_deploy", .data = "k" });
     var env = std.process.Environ.Map.init(a);
     var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
     var au: @import("audit-log.zig").Audit = .{ .a = a };

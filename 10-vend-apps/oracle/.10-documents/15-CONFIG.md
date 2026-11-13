@@ -53,7 +53,8 @@ A wrong or unknown setting stops the program and names the line. Every setting m
 | `inst.boot` | Boot disk size in GB | `50` | 47 or more |
 | `inst.user` | Login name shown in the final report | `ubuntu` | text |
 | `inst.wait` · `inst.poll` | How long to wait for the VM, and how often to look, in seconds | `600` · `10` | whole numbers |
-| `boot.urlz` · `boot.sha2` | Address and sha256 of your app program. Both empty = no app is installed | empty | text |
+| `boot.urlz` · `boot.sha2` | Address and sha256 of your app program for x86_64 VMs. Both empty = no app is installed | empty | text |
+| `boot.urla` · `boot.sh2a` | Same, for an Arm (aarch64) VM. The VM picks the pair that matches its CPU | empty | text |
 | `boot.bina` · `boot.svcn` · `boot.svcu` · `boot.args` | Where the app goes on the VM, its service name, the user it runs as, its arguments | `/usr/local/bin/cloud-house-app` · `cloud-house-app` · `chouse` · empty | text |
 | `cini` · `unit` | The VM start-up script and service file, line by line | see file | lines |
 | `keep.on` | Run a small repeating load so Oracle does not see the VM as idle | `false` | `true` / `false` |

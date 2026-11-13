@@ -28,7 +28,7 @@ pub const Conf = struct {
     netw: struct { vcnn: []const u8, vcnc: []const u8, subn: []const u8, subc: []const u8, igwn: []const u8, routn: []const u8, secn: []const u8, ruln: []const u8 },
     ingr: []const Ingr,
     inst: struct { name: []const u8, shap: []const u8, free: []const []const u8, imgo: []const u8, imgv: []const u8, boot: u32, ocpu: u32, memg: u32, fall: []const u8, fcpu: u32, fmem: u32, user: []const u8, wait: u32, poll: u32 },
-    boot: struct { urlz: []const u8, sha2: []const u8, bina: []const u8, svcn: []const u8, svcu: []const u8, args: []const u8 },
+    boot: struct { urlz: []const u8, sha2: []const u8, urla: []const u8, sh2a: []const u8, bina: []const u8, svcn: []const u8, svcu: []const u8, args: []const u8 },
     cini: []const []const u8,
     unit: []const []const u8,
     keep: struct { on: bool, duty: u32, secs: u32 },

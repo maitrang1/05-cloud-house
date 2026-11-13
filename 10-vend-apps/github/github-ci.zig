@@ -151,6 +151,7 @@ test "the release job is kept with its targets and timeout, or cut out whole; th
     try std.testing.expect(std.mem.indexOf(u8, on, "gh release create") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "for t in x86_64-linux aarch64-macos; do") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "timeout-minutes: 45") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "cp LICENSE \"dist/") != null); // every download carries the license
     const off = try tmplFill(a, raw, .{ .rele = false });
     try std.testing.expect(std.mem.indexOf(u8, off, "@@") == null);
     try std.testing.expect(std.mem.indexOf(u8, off, "release") == null);
