@@ -22,6 +22,7 @@ const repo = @import("github-repo.zig");
 const ci = @import("github-ci.zig");
 const rpush = @import("repo-push.zig");
 const task = @import("app-task.zig");
+const seen = @import("edit-seen.zig");
 const sshc = @import("ssh-conf.zig");
 
 const CF = .{ .conf_file = "00-config.json", .step_file = "10-steps.json", .args_maxz = 64, .apps_maxz = 16 };
@@ -35,6 +36,7 @@ const Args = struct {
     from: ?[]const u8 = null,
     live: bool = false,
     app_all: bool = false,
+    app_edit: bool = false,
     target: ?[]const u8 = null,
     app_buf: [CF.apps_maxz][]const u8 = undefined,
     app_cnt: usize = 0,
@@ -64,7 +66,8 @@ const USAGE =
     \\  --root   <path>   the repo folder to set up (required for run/plan/push)
     \\  --from   <path>   push only: the working tree to copy from
     \\  --app    <name>   test/build: one app, by name or the tail of it (github); repeat for more
-    \\  --app-all         test/build: every app (never the default; nothing runs without --app or --app-all)
+    \\  --app-all         test/build: every app, forced (never the default; nothing runs without --app, --app-edit or --app-all)
+    \\  --app-edit        test/build: only apps whose files changed since their last green run of the same kind
     \\  --target <name>   build only: a cross target from ciiz.rele_targets (windows, x86_64-linux); no flag = native
     \\  --live            allow calls that write (sign-up, push, secrets); omit for a dry-run
     \\
@@ -83,6 +86,8 @@ fn parseArgs(args: []const []const u8) ?Args {
             a.live = true;
         } else if (std.mem.eql(u8, v, "--app-all")) {
             a.app_all = true;
+        } else if (std.mem.eql(u8, v, "--app-edit")) {
+            a.app_edit = true;
         } else if (std.mem.eql(u8, v, "--app") and i + 1 < args.len and a.app_cnt < CF.apps_maxz) {
             i += 1;
             a.app_buf[a.app_cnt] = args[i];
@@ -152,14 +157,15 @@ fn die(code: u8) noreturn {
 }
 
 // `test` and `build`: one app at a time, named by the user; nothing runs without --app or --app-all ----
-fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Map, cf: conf.Conf, p: Args) noreturn {
+fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Map, cf: conf.Conf, p: Args, seen_path: []const u8) noreturn {
     const is_build = std.mem.eql(u8, p.cmd, "build");
     const from = p.from orelse {
         out.fail(io, "no source folder given", "--from is required", "pass --from <working tree>");
         die(2);
     };
-    if ((p.app_cnt == 0 and !p.app_all) or (p.app_cnt > 0 and p.app_all)) {
-        out.fail(io, "no app chosen", "name one app with --app <name> (repeat for more) or use --app-all, never both", "e.g. github test --from <work tree> --app github");
+    const picked = @as(u8, @intFromBool(p.app_cnt > 0)) + @intFromBool(p.app_all) + @intFromBool(p.app_edit);
+    if (picked != 1) {
+        out.fail(io, "no app chosen", "pick exactly one way: --app <name> (repeat for more), --app-edit, or --app-all", "e.g. github test --from <work tree> --app github");
         die(2);
     }
     if (p.target != null and !is_build) {
@@ -175,7 +181,7 @@ fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Ma
         die(2);
     };
     var chosen: std.ArrayList(task.Named) = .empty;
-    if (p.app_all) {
+    if (p.app_all or p.app_edit) {
         chosen.appendSlice(a, list) catch die(1);
     } else for (p.app_buf[0..p.app_cnt]) |q| {
         const got = task.pick(a, list, q) catch die(1);
@@ -199,12 +205,36 @@ fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Ma
             die(2);
         }
     }
-    const jobs = (if (is_build) task.buildJobs(a, cf.task, chosen.items, targets) else task.testJobs(a, cf.task, chosen.items)) catch die(1);
+    var jobs = (if (is_build) task.buildJobs(a, cf.task, chosen.items, targets) else task.testJobs(a, cf.task, chosen.items)) catch die(1);
+    // what each app looks like right now; a green run saves it, --app-edit compares against it
+    var memo = seen.load(io, a, seen_path) catch die(1);
+    var hashes: std.StringHashMapUnmanaged(seen.Hex) = .empty;
+    for (chosen.items) |x| {
+        const h = seen.hashApp(io, a, from, x.path, cf.push, cf.task.edit_skip) catch |e| {
+            out.fail(io, std.fmt.allocPrint(a, "cannot read {s}", .{x.name}) catch "cannot read an app", @errorName(e), "check --from is the work tree");
+            die(1);
+        };
+        hashes.put(a, x.name, h) catch die(1);
+    }
+    if (p.app_edit) {
+        var keep: std.ArrayList(task.Job) = .empty;
+        for (jobs) |j| if (memo.edited(j.key, &hashes.get(j.name).?)) keep.append(a, j) catch die(1);
+        jobs = keep.items;
+        if (jobs.len == 0) {
+            out.say(io, "nothing edited since the last green run\n", .{});
+            die(0);
+        }
+        out.say(io, "edited since the last green run:", .{});
+        for (jobs) |j| out.say(io, " {s}", .{j.label});
+        out.say(io, "\n", .{});
+    }
     var real: task.Real = .{ .io = io, .a = a, .env = env, .tmos_secs = cf.task.tmos_secs };
     const res = task.runJobs(io, a, cf.task, from, jobs, task.realRun, &real, &pushSay) catch |e| {
         out.fail(io, "run failed", @errorName(e), "check --from is the work tree and zig is on PATH");
         die(1);
     };
+    for (res.green) |gi| memo.put(jobs[gi].key, &hashes.get(jobs[gi].name).?) catch die(1);
+    if (res.green.len > 0) memo.save(io) catch out.say(io, "note: could not save the green record ({s}); --app-edit will run these again\n", .{seen_path});
     for (res.bad) |f| out.fail(io, std.fmt.allocPrint(a, "{s} is red", .{f.label}) catch "a job is red", if (f.tail.len > 0) f.tail else "the command failed", "fix it in that app folder, then run again");
     out.say(io, "\n{s}: {d} green · {d} red\n", .{ p.cmd, res.ok, res.bad.len });
     die(if (res.bad.len == 0) 0 else 1);
@@ -264,7 +294,7 @@ pub fn main(init: std.process.Init) void {
         out.fail(io, "steps problem", conf.why, "fix 10-steps.json and run again");
         die(2);
     };
-    if (std.mem.eql(u8, parsed.cmd, "test") or std.mem.eql(u8, parsed.cmd, "build")) taskMain(io, a, env, cf, parsed);
+    if (std.mem.eql(u8, parsed.cmd, "test") or std.mem.eql(u8, parsed.cmd, "build")) taskMain(io, a, env, cf, parsed, std.fs.path.join(a, &.{ home_full, cf.data.seen }) catch die(2));
     if (std.mem.eql(u8, parsed.cmd, "push")) {
         const from = parsed.from orelse {
             out.fail(io, "no source folder given", "--from is required for push", "pass --from <working tree> and --root <repo folder>");
@@ -407,6 +437,7 @@ test {
     _ = @import("ssh-conf.zig");
     _ = @import("step-engine.zig");
     _ = @import("app-task.zig");
+    _ = @import("edit-seen.zig");
 }
 // ========================___THIS_IS_THE_END___========================
 // ===============___HOLD_YOUR_BREATH_AND_COUNT_TO_TEN___===============

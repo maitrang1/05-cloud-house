@@ -10,14 +10,16 @@
 // =====================================================================
 const std = @import("std");
 const conf = @import("config-load.zig");
+const seen = @import("edit-seen.zig");
 
 const CF = .{ .app_file = "build.zig", .tail_maxz = 600, .code_miss = 127, .code_kill = 255, .outp_maxz = 4 * 1024 * 1024 };
 
 pub const Result = struct { code: u8, tail: []const u8 = "" };
 pub const Run = *const fn (ctx: ?*anyopaque, dir: []const u8, argv: []const []const u8) Result;
-pub const Job = struct { label: []const u8, path: []const u8, argv: []const []const u8 };
+// name = the app, key = what `--app-edit` remembers it under (app|test, app|build:target) ----
+pub const Job = struct { label: []const u8, path: []const u8, argv: []const []const u8, name: []const u8 = "", key: []const u8 = "" };
 pub const Fail = struct { label: []const u8, tail: []const u8, tries: u32 };
-pub const Outcome = struct { ok: u32 = 0, bad: []const Fail = &.{} };
+pub const Outcome = struct { ok: u32 = 0, bad: []const Fail = &.{}, green: []const u32 = &.{} };
 
 fn skipDir(skip: []const []const u8, name: []const u8) bool {
     for (skip) |d| if (std.mem.eql(u8, d, name)) return true;
@@ -70,11 +72,11 @@ pub const Named = struct { path: []const u8, name: []const u8 };
 fn tail(a: std.mem.Allocator, path: []const u8, n: usize) ![]u8 {
     const p = std.mem.trim(u8, path, "/");
     var start: usize = p.len;
-    var seen: usize = 0;
+    var cuts: usize = 0;
     while (start > 0) : (start -= 1) {
         if (p[start - 1] == '/') {
-            seen += 1;
-            if (seen == n) break;
+            cuts += 1;
+            if (cuts == n) break;
         }
     }
     return flat(a, p[start..]);
@@ -123,7 +125,7 @@ pub fn targetsFor(a: std.mem.Allocator, all: []const []const u8, want: []const u
 
 pub fn testJobs(a: std.mem.Allocator, t: conf.Task, apps_: []const Named) ![]const Job {
     var out: std.ArrayList(Job) = .empty;
-    for (apps_) |x| try out.append(a, .{ .label = x.name, .path = x.path, .argv = t.test_cmd });
+    for (apps_) |x| try out.append(a, .{ .label = x.name, .path = x.path, .argv = t.test_cmd, .name = x.name, .key = try seen.keyFor(a, x.name, false, null) });
     return out.items;
 }
 
@@ -135,13 +137,15 @@ pub fn buildJobs(a: std.mem.Allocator, t: conf.Task, apps_: []const Named, targe
         const name = x.name;
         const p = x.path;
         if (targets.len == 0) {
-            try out.append(a, .{ .label = name, .path = p, .argv = try a.dupe([]const u8, &.{ "zig", "build", opt }) });
+            try out.append(a, .{ .label = name, .path = p, .argv = try a.dupe([]const u8, &.{ "zig", "build", opt }), .name = name, .key = try seen.keyFor(a, name, true, null) });
             continue;
         }
         for (targets) |tg| try out.append(a, .{
             .label = try std.fmt.allocPrint(a, "{s} ({s})", .{ name, tg }),
             .path = p,
             .argv = try a.dupe([]const u8, &.{ "zig", "build", try std.fmt.allocPrint(a, "-Dtarget={s}", .{tg}), opt, "-p", try std.fmt.allocPrint(a, "zig-out/{s}", .{tg}) }),
+            .name = name,
+            .key = try seen.keyFor(a, name, true, tg),
         });
     }
     return out.items;
@@ -150,8 +154,9 @@ pub fn buildJobs(a: std.mem.Allocator, t: conf.Task, apps_: []const Named, targe
 // run every job in its app folder; a red job is retried, then reported, and the rest still run ----
 pub fn runJobs(io: std.Io, a: std.mem.Allocator, t: conf.Task, from: []const u8, jobs: []const Job, run: Run, rctx: ?*anyopaque, say: *const fn (std.Io, []const u8) void) !Outcome {
     var bad: std.ArrayList(Fail) = .empty;
+    var green: std.ArrayList(u32) = .empty;
     var ok: u32 = 0;
-    for (jobs) |j| {
+    for (jobs, 0..) |j, ji| {
         const dir = try std.fs.path.join(a, &.{ from, j.path });
         var tries: u32 = 0;
         var last: Result = .{ .code = 0 };
@@ -163,13 +168,14 @@ pub fn runJobs(io: std.Io, a: std.mem.Allocator, t: conf.Task, from: []const u8,
         }
         if (last.code == 0) {
             ok += 1;
+            try green.append(a, @intCast(ji));
             say(io, try std.fmt.allocPrint(a, "{s}: green\n", .{j.label}));
         } else {
             try bad.append(a, .{ .label = j.label, .tail = last.tail, .tries = tries });
             say(io, try std.fmt.allocPrint(a, "{s}: RED\n", .{j.label}));
         }
     }
-    return .{ .ok = ok, .bad = bad.items };
+    return .{ .ok = ok, .bad = bad.items, .green = green.items };
 }
 
 // ---- the real runner: one child process with a deadline, in the app folder ----
@@ -284,10 +290,12 @@ test "jobs: test uses the config command, build is native without a target and k
     try std.testing.expectEqualStrings("alpha", tj[0].label);
     try std.testing.expectEqualStrings("v/alpha", tj[0].path);
     try std.testing.expectEqualStrings("test", tj[0].argv[2]);
+    try std.testing.expectEqualStrings("alpha|test", tj[0].key);
     const nat = try buildJobs(a, t, two[0..1], &.{});
     try std.testing.expectEqual(@as(usize, 1), nat.len);
     try std.testing.expectEqualStrings("-Doptimize=ReleaseSafe", nat[0].argv[2]);
     try std.testing.expectEqual(@as(usize, 3), nat[0].argv.len);
+    try std.testing.expectEqualStrings("alpha|build:native", nat[0].key);
     const all: []const []const u8 = &.{ "x86_64-linux", "x86_64-windows" };
     const win = try targetsFor(a, all, "windows");
     try std.testing.expectEqual(@as(usize, 1), win.len);
@@ -295,6 +303,8 @@ test "jobs: test uses the config command, build is native without a target and k
     try std.testing.expectEqualStrings("alpha (x86_64-windows)", cross[0].label);
     try std.testing.expectEqualStrings("-Dtarget=x86_64-windows", cross[0].argv[2]);
     try std.testing.expectEqualStrings("zig-out/x86_64-windows", cross[0].argv[5]);
+    try std.testing.expectEqualStrings("alpha|build:x86_64-windows", cross[0].key);
+    try std.testing.expectEqualStrings("alpha", cross[0].name);
     try std.testing.expectEqual(@as(usize, 0), (try targetsFor(a, all, "macos")).len);
     try std.testing.expectEqual(@as(usize, 0), (try targetsFor(a, all, "")).len);
 }
@@ -311,10 +321,13 @@ test "runJobs: green jobs count, a red job is retried then reported, the rest st
     var s: Script = .{ .a = a };
     const clean = try runJobs(std.testing.io, a, .{ .retr = 0 }, "/t", jobs, Script.run, &s, quiet);
     try std.testing.expectEqual(@as(u32, 3), clean.ok);
+    try std.testing.expectEqual(@as(usize, 3), clean.green.len);
     try std.testing.expectEqual(@as(usize, 0), clean.bad.len);
     var red: Script = .{ .a = a, .bad = "alpha", .failing_times = 9 };
     const r = try runJobs(std.testing.io, a, .{ .retr = 1 }, "/t", jobs, Script.run, &red, quiet);
     try std.testing.expectEqual(@as(u32, 2), r.ok); // gamma and beta still ran after alpha went red
+    try std.testing.expectEqual(@as(usize, 2), r.green.len);
+    try std.testing.expectEqual(@as(u32, 1), r.green[0]); // alpha (job 0) is not in the green list
     try std.testing.expectEqual(@as(usize, 1), r.bad.len);
     try std.testing.expectEqualStrings("alpha", r.bad[0].label);
     try std.testing.expectEqual(@as(u32, 2), r.bad[0].tries);

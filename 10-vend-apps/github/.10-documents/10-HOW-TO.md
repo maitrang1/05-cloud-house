@@ -45,12 +45,12 @@ Files you removed from your work folder are moved to `~/00_modules/zzzz-delete-f
 ---
 
 ## Test or build one app
-Nothing runs unless you name an app. `--app` takes the app's short name (its last folder, like `github`; `facebook-scrape` and `zalochat-scrape` for the two `scrape` apps); repeat it for more; `--app-all` does every app:
+Nothing runs unless you name an app. `--app` takes the app's short name (its last folder, like `github`; `facebook-scrape` and `zalochat-scrape` for the two `scrape` apps); repeat it for more; `--app-all` forces every app; `--app-edit` runs only the apps you changed since their last green run (an app never tested counts as changed):
 ```
 /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github test --from /home/mai_trang/00_modules/05-cloud-house --app github
 /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github build --from /home/mai_trang/00_modules/05-cloud-house --app github --target windows
 ```
-`build` without `--target` makes a normal exe for this machine in the app's `zig-out/bin`.
+Pick exactly one of those three. `build` without `--target` makes a normal exe for this machine in the app's `zig-out/bin`.
 
 ---
 

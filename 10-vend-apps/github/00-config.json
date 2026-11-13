@@ -7,7 +7,8 @@
     "vaul": "github-main.vault",
     "audi": "github-audit.jsonl",
     "keys": "github-keys",
-    "host": "github-known_hosts"
+    "host": "github-known_hosts",
+    "seen": "github-task.seen"
   },
   "http": {
     "apiz_base": "https://api.github.com",
@@ -85,7 +86,7 @@
     "crlf": "input",
     "tmos_secs": 300
   },
-  "task": { "test_cmd": ["zig", "build", "test"], "build_opt": "ReleaseSafe", "tmos_secs": 900, "retr": 1 },
+  "task": { "test_cmd": ["zig", "build", "test"], "build_opt": "ReleaseSafe", "tmos_secs": 900, "retr": 1, "edit_skip": ["*.10-documents/*"] },
   "sshz": {
     "keyz_name": "id_ed25519_deploy",
     "kind": "deploy",

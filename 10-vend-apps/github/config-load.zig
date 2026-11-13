@@ -43,6 +43,7 @@ pub const Data = struct {
     audi: []const u8 = "github-audit.jsonl",
     keys: []const u8 = "github-keys",
     host: []const u8 = "github-known_hosts",
+    seen: []const u8 = "github-task.seen",
 };
 
 pub const Sign = struct {
@@ -137,7 +138,7 @@ pub const Ghcr = struct { onzz: bool = false };
 pub const Mirr = struct { name: []const u8, urlz: []const u8, onzz: bool = false };
 
 // local `test` and `build` commands: one app at a time, named by the user; build_opt is the -Doptimize value ----
-pub const Task = struct { test_cmd: []const []const u8 = &.{ "zig", "build", "test" }, build_opt: []const u8 = "ReleaseSafe", tmos_secs: u32 = 900, retr: u32 = 1 };
+pub const Task = struct { test_cmd: []const []const u8 = &.{ "zig", "build", "test" }, build_opt: []const u8 = "ReleaseSafe", tmos_secs: u32 = 900, retr: u32 = 1, edit_skip: []const []const u8 = &.{"*.10-documents/*"} };
 
 pub const Push = struct {
     skip_dirs: []const []const u8 = &.{},
@@ -255,7 +256,7 @@ pub fn baseOkay(url: []const u8, mock: bool) bool {
 pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (c.vers != CF.vers) return bad("vers must be {d}", .{CF.vers});
     if (c.data.root.len == 0) return bad("data.root must not be empty", .{});
-    inline for (.{ "acct", "stat", "vaul", "audi", "keys", "host" }) |k| {
+    inline for (.{ "acct", "stat", "vaul", "audi", "keys", "host", "seen" }) |k| {
         const v = @field(c.data, k);
         if (v.len == 0 or std.mem.indexOfAny(u8, v, "/\\") != null) return bad("data." ++ k ++ " must be a plain file name", .{});
     }
