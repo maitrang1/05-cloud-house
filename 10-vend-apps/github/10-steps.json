@@ -14,7 +14,7 @@
     { "numb": 9, "iden": "sshz-keyz", "kind": "auto", "acts": "sshz.keyz", "hand": 0, "name": "SSH key (ed25519)", "need": "nothing", "done": "key listed on the account" },
     { "numb": 10, "iden": "file-igno", "kind": "auto", "acts": "file.igno", "hand": 0, "name": ".gitignore, .gitattributes", "need": "nothing", "done": "files exist" },
     { "numb": 11, "iden": "scan-secr", "kind": "auto", "acts": "scan.secr", "hand": 0, "name": "Secret scan of files to commit", "need": "only if a key-like file shows up", "done": "nothing risky to commit" },
-    { "numb": 12, "iden": "repo-make", "kind": "auto", "acts": "repo.make", "hand": 0, "name": "Create private repo, first commit, push", "need": "nothing", "done": "git ls-remote origin shows the branch" },
+    { "numb": 12, "iden": "repo-make", "kind": "auto", "acts": "repo.make", "hand": 0, "name": "Create repo (visibility from config), first commit, push", "need": "nothing", "done": "git ls-remote origin shows the branch" },
     { "numb": 13, "iden": "repo-sett", "kind": "auto", "acts": "repo.sett", "hand": 0, "name": "Repo settings", "need": "nothing", "done": "GET /repos matches config" },
     { "numb": 14, "iden": "rule-bran", "kind": "auto", "acts": "rule.bran", "hand": 0, "name": "Branch rules", "need": "nothing", "done": "rule exists, or skip is logged" },
     { "numb": 15, "iden": "ciiz-secr", "kind": "auto", "acts": "ciiz.secr", "hand": 0, "name": "CI secrets, from the vault", "need": "nothing normally", "done": "secret is listed" },

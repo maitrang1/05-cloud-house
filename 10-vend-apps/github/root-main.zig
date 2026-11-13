@@ -44,6 +44,7 @@ const USAGE =
     \\  run       do the steps; dry-run by default, needs --live for the first live run
     \\  status    print the saved state file
     \\  push      one-way mirror: --from always overwrites --root, gone files move to the trash (dry-run unless --live)
+    \\  publish   push, then scan, commit and push to GitHub in one go (--from --root; dry-run unless --live)
     \\  revoke    kill the login token and vaulted secrets this app made (never the repo)
     \\  version   print the app version
     \\  help      print this text
@@ -137,7 +138,7 @@ pub fn main(init: std.process.Init) void {
         out.say(io, "github {s}\n", .{build_options.version});
         die(0);
     }
-    const KNOWN = [_][]const u8{ "plan", "run", "status", "revoke", "push" };
+    const KNOWN = [_][]const u8{ "plan", "run", "status", "revoke", "push", "publish" };
     var okay = false;
     for (KNOWN) |k| {
         if (std.mem.eql(u8, parsed.cmd, k)) okay = true;
@@ -146,7 +147,7 @@ pub fn main(init: std.process.Init) void {
         out.err(io, "{s}", .{USAGE});
         die(2);
     }
-    const NEEDS_ROOT = [_][]const u8{ "plan", "run", "revoke", "push" };
+    const NEEDS_ROOT = [_][]const u8{ "plan", "run", "revoke", "push", "publish" };
     var needs_root = false;
     for (NEEDS_ROOT) |k| {
         if (std.mem.eql(u8, parsed.cmd, k)) needs_root = true;
@@ -193,6 +194,52 @@ pub fn main(init: std.process.Init) void {
 
     var ctx: ctxm.Ctx = .{ .io = io, .a = a, .env = env, .conf = cf, .steps = sf, .stat = &st, .audi = &au, .home = home_full, .root = parsed.root orelse "", .conf_dirz = std.fs.path.dirname(parsed.conf_path) orelse ".", .live = parsed.live };
 
+    if (std.mem.eql(u8, parsed.cmd, "publish")) {
+        const from = parsed.from orelse {
+            out.fail(io, "no source folder given", "--from is required for publish", "pass --from <working tree> and --root <repo folder>");
+            die(2);
+        };
+        const rep = rpush.push(io, a, cf.push, from, ctx.root, parsed.live, ctx.nowSecs(), &pushSay) catch |e| {
+            out.fail(io, "mirror failed", @errorName(e), "check both folders exist and are writable, then run again");
+            die(1);
+        };
+        out.say(io, "mirror: copied {d} · same {d} · denied {d} · too big {d} · moved to trash {d}\n", .{ rep.copied, rep.same, rep.denied, rep.big, rep.moved });
+        const flow = ci.ciizRender(&ctx, parsed.live) catch |e| {
+            out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
+            die(1);
+        };
+        if (flow) out.say(io, "workflow: {s} {s}\n", .{ if (parsed.live) "updated" else "would update", cf.ciiz.file_path });
+        if (!parsed.live) {
+            out.say(io, "dry-run: nothing scanned, committed or pushed. Pass --live to publish.\n", .{});
+            die(0);
+        }
+        ctx.stat.putz("scan_okay", "") catch {};
+        const scanned = repo.scanSecr(&ctx, .acts) catch |e| {
+            out.fail(io, "scan failed", @errorName(e), "run the same command again");
+            die(1);
+        };
+        switch (scanned) {
+            .fail => |f| {
+                out.fail(io, f.what, f.why, f.fix);
+                die(f.code);
+            },
+            .done => |msg| out.say(io, "scan: {s}\n", .{msg}),
+            else => {},
+        }
+        const sent = repo.publish(&ctx) catch |e| {
+            out.fail(io, "publish failed", @errorName(e), "run the same command again");
+            die(1);
+        };
+        switch (sent) {
+            .fail => |f| {
+                out.fail(io, f.what, f.why, f.fix);
+                die(f.code);
+            },
+            .done => |msg| out.say(io, "{s}\n", .{msg}),
+            else => {},
+        }
+        die(0);
+    }
     if (std.mem.eql(u8, parsed.cmd, "plan")) {
         eng.plan(&ctx, &TABLE) catch |e| {
             out.fail(io, "plan failed", @errorName(e), "run the same command again");

@@ -67,7 +67,8 @@
     "wiki": false,
     "proj": false,
     "merg_dele": true,
-    "comm_text": "first commit"
+    "comm_text": "first commit",
+    "publ_text": "sync from the work tree"
   },
   "gitz": {
     "scop": "local",
@@ -141,6 +142,9 @@
     "paths": [],
     "tags": true,
     "cache": true,
+    "rele": true,
+    "rele_tmos_mins": 60,
+    "rele_targets": ["x86_64-linux", "x86_64-windows"],
     "secr": [
       { "name": "HEALTHCHECKS_URL", "vaul": "ci.healthchecks_url", "need": false }
     ]

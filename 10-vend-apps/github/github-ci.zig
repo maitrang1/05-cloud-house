@@ -84,6 +84,30 @@ pub fn ciizSecr(ctx: *Ctx, mode: Mode) anyerror!Outc {
 }
 
 // fill the workflow template from config; every knob lives in 00-config.json
+// the release job sits between two marker lines: keep its text (markers dropped) or cut it all out ----
+fn releaseBlock(a: std.mem.Allocator, tmpl: []const u8, keep: bool) ![]u8 {
+    const begin = "@@RELEASE_BEGIN@@\n";
+    const end = "@@RELEASE_END@@\n";
+    const b = std.mem.indexOf(u8, tmpl, begin) orelse return a.dupe(u8, tmpl);
+    const e = std.mem.indexOfPos(u8, tmpl, b, end) orelse return a.dupe(u8, tmpl);
+    const inner = tmpl[b + begin.len .. e];
+    return std.mem.concat(a, u8, &.{ tmpl[0..b], if (keep) inner else "", tmpl[e + end.len ..] });
+}
+
+// write the workflow from the template when it differs from the file in the repo folder; true = it changed ----
+pub fn ciizRender(ctx: *Ctx, write: bool) !bool {
+    const raw = std.Io.Dir.cwd().readFileAlloc(ctx.io, ctx.conf.ciiz.tmpl_file, ctx.a, .limited(64 * 1024)) catch return error.TemplateMissing;
+    const want = try tmplFill(ctx.a, raw, ctx.conf.ciiz);
+    const dest = try ctx.path(&.{ ctx.root, ctx.conf.ciiz.file_path });
+    const have = std.Io.Dir.cwd().readFileAlloc(ctx.io, dest, ctx.a, .limited(256 * 1024)) catch null;
+    if (have != null and std.mem.eql(u8, have.?, want)) return false;
+    if (write) {
+        if (std.fs.path.dirname(dest)) |d| try std.Io.Dir.cwd().createDirPath(ctx.io, d);
+        try std.Io.Dir.cwd().writeFile(ctx.io, .{ .sub_path = dest, .data = want });
+    }
+    return true;
+}
+
 fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig").Ciiz) ![]u8 {
     var paths: std.ArrayList(u8) = .empty;
     if (cf.paths.len > 0) {
@@ -95,10 +119,12 @@ fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig
         "\n      - id: ZIGZ-CASH\n        uses: actions/cache@v4\n        with:\n          path: ~/.cache/zig\n          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}\n"
     else
         "";
-    const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@" };
+    const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@" };
     const timeout = try std.fmt.allocPrint(a, "{d}", .{cf.job_tmos_mins});
-    const vals = [_][]const u8{ tags, paths.items, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache };
-    var cur = try a.dupe(u8, tmpl);
+    const reltmo = try std.fmt.allocPrint(a, "{d}", .{cf.rele_tmos_mins});
+    const targets = try std.mem.join(a, " ", cf.rele_targets);
+    const vals = [_][]const u8{ tags, paths.items, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache, reltmo, targets };
+    var cur = try releaseBlock(a, tmpl, cf.rele);
     for (keys, vals) |k, v| cur = try std.mem.replaceOwned(u8, a, cur, k, v);
     return cur;
 }
@@ -113,6 +139,22 @@ test "tmplFill puts every config knob in and leaves no marker behind" {
     try std.testing.expect(std.mem.indexOf(u8, out, "      - 'apps/x/**'") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "|ubuntu-slim|7|") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "actions/cache") == null);
+}
+
+test "the release job is kept with its targets and timeout, or cut out whole; the shipped template leaves no marker" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const raw = try std.Io.Dir.cwd().readFileAlloc(std.testing.io, "20-build.yml", a, .limited(64 * 1024));
+    const on = try tmplFill(a, raw, .{ .rele_targets = &.{ "x86_64-linux", "aarch64-macos" }, .rele_tmos_mins = 45 });
+    try std.testing.expect(std.mem.indexOf(u8, on, "@@") == null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "gh release create") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "for t in x86_64-linux aarch64-macos; do") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "timeout-minutes: 45") != null);
+    const off = try tmplFill(a, raw, .{ .rele = false });
+    try std.testing.expect(std.mem.indexOf(u8, off, "@@") == null);
+    try std.testing.expect(std.mem.indexOf(u8, off, "release") == null);
+    try std.testing.expect(std.mem.indexOf(u8, off, "EXEZ-BUIL") != null); // the build job stays
 }
 
 fn fileAtRepo(ctx: *Ctx, rel: []const u8) !bool {

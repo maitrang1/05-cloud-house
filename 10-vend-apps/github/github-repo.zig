@@ -218,6 +218,22 @@ pub fn repoMake(ctx: *Ctx, mode: Mode) anyerror!Outc {
     return .{ .done = try std.fmt.allocPrint(ctx.a, "{s} pushed", .{name}) };
 }
 
+// later edits: commit everything the mirror brought in and push it; nothing changed = nothing sent ----
+pub fn publish(ctx: *Ctx) anyerror!Outc {
+    const g = ctx.gitz(try sshzCommand(ctx));
+    const st = try g.run(&.{ "status", "--porcelain" });
+    if (!st.okay()) return ctxm.fail("cannot read the repo state", st.err, "check --root is the repo folder");
+    if (st.text().len == 0) return .{ .done = "nothing to publish" };
+    const add = try g.run(&.{ "add", "-A" });
+    if (!add.okay()) return ctxm.fail("cannot stage the files", add.err, "check the repo folder is writable");
+    const commit = try g.run(&.{ "commit", "-m", ctx.conf.repo.publ_text });
+    if (!commit.okay()) return ctxm.fail("cannot commit", commit.err, "check git identity (step 8)");
+    const push = try g.run(&.{ "push", "origin", ctx.conf.repo.bran });
+    if (!push.okay()) return ctxm.fail("cannot push", push.err, "check the SSH key is uploaded (step 9) and the network works");
+    const head = try g.run(&.{ "rev-parse", "--short", "HEAD" });
+    return .{ .done = try std.fmt.allocPrint(ctx.a, "published {s}", .{head.text()}) };
+}
+
 // ---- step 13: repo settings ----
 pub fn repoSett(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const path = try std.mem.concat(ctx.a, u8, &.{ "/repos/", try repoOwner(ctx), "/", try api.enc(ctx.a, ctx.repoName()) });
@@ -260,7 +276,7 @@ fn ruleTypes(cf: @import("config-load.zig").Rule, buf: *[3]RuleType) []const Rul
     return buf[0..n];
 }
 
-// ---- step 14: branch rules (Free private repos refuse this: logged as a skip, never an error) ----
+// ---- step 14: branch rules (a plan that refuses rulesets is logged as a skip, never an error) ----
 pub fn ruleBran(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if (!ctx.conf.rule.onzz) return .{ .skip = "skipped: rule.onzz is off" };
     if ((ruleSeen(ctx) catch null) != null) return .{ .done = "rule exists" };
@@ -277,7 +293,7 @@ pub fn ruleBran(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const r = try api.call(ctx, .POST, try std.mem.concat(ctx.a, u8, &.{ "/repos/", owner, "/", try api.enc(ctx.a, ctx.repoName()), "/rulesets" }), body, true);
     if (r.code == 403 or r.code == 404 or r.code == 422) {
         try ctx.stat.setz("rule-bran", .skipped, "skipped: plan", ctx.nowSecs());
-        return .{ .skip = "skipped: plan (rulesets need a paid plan on a private repo)" };
+        return .{ .skip = "skipped: plan (this plan or repo visibility refuses rulesets)" };
     }
     if (!r.okay()) return api.refuse(ctx, r, "cannot create the branch rule");
     return .{ .done = "rule created" };
@@ -296,6 +312,46 @@ test "ruleTypes follows config flags, in order, with none when all are off" {
     try std.testing.expectEqualStrings("pull_request", ruleTypes(cf, &buf)[2].type);
     cf = .{ .dele_bloc = false, .forc_bloc = false, .pull_need = false };
     try std.testing.expectEqual(@as(usize, 0), ruleTypes(cf, &buf).len);
+}
+
+test "publish: commits and pushes what changed, says nothing to publish when clean" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.createDirPath(io, "work");
+    try tmp.dir.createDirPath(io, "remote.git");
+    const base = try tmp.dir.realPathFileAlloc(io, ".", a);
+    var env = std.process.Environ.Map.init(a);
+    if (std.c.getenv("PATH")) |pp| try env.put("PATH", std.mem.span(pp));
+    try env.put("HOME", base);
+    try env.put("GIT_CONFIG_NOSYSTEM", "1");
+    try env.put("GIT_CEILING_DIRECTORIES", base);
+    for ([_][]const u8{ "GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME" }) |k| try env.put(k, "tester");
+    for ([_][]const u8{ "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_EMAIL" }) |k| try env.put(k, "t@example.com");
+    var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
+    var au: @import("audit-log.zig").Audit = .{ .a = a };
+    const work = try std.fs.path.join(a, &.{ base, "work" });
+    const bare = try std.fs.path.join(a, &.{ base, "remote.git" });
+    var c: Ctx = .{ .io = io, .a = a, .env = &env, .conf = .{}, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = base, .root = work, .conf_dirz = "" };
+    _ = c.gitz("").run(&.{"--version"}) catch |e| if (e == error.Missing) return error.SkipZigTest else return e;
+    var rg: @import("git-run.zig").Git = c.gitz("");
+    rg.root = bare;
+    try std.testing.expect((try rg.run(&.{ "init", "-q", "--bare", "-b", "main" })).okay());
+    try std.testing.expect((try ensureRepo(&c)) == null);
+    try std.testing.expect((try c.gitz("").run(&.{ "remote", "add", "origin", bare })).okay());
+    try tmp.dir.writeFile(io, .{ .sub_path = "work/a.txt", .data = "one" });
+    const first = try publish(&c);
+    try std.testing.expect(first == .done and std.mem.startsWith(u8, first.done, "published "));
+    const log1 = try rg.run(&.{ "rev-list", "--count", "main" });
+    try std.testing.expectEqualStrings("1", log1.text());
+    const again = try publish(&c);
+    try std.testing.expect(again == .done and std.mem.eql(u8, again.done, "nothing to publish"));
+    try tmp.dir.writeFile(io, .{ .sub_path = "work/a.txt", .data = "two" });
+    _ = try publish(&c);
+    try std.testing.expectEqualStrings("2", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
 }
 
 test "ensureRepo: makes a repo in a plain folder, accepts its own repo, refuses a folder inside another repo unless allowed" {

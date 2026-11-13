@@ -73,6 +73,7 @@ pub const Repo = struct {
     proj: bool = false,
     merg_dele: bool = true,
     comm_text: []const u8 = "first commit",
+    publ_text: []const u8 = "sync from the work tree",
 };
 
 pub const Gitz = struct { scop: []const u8 = "local", prot: []const u8 = "ssh", crlf: []const u8 = "input", tmos_secs: u32 = 300 };
@@ -115,6 +116,9 @@ pub const Ciiz = struct {
     paths: []const []const u8 = &.{},
     tags: bool = true,
     cache: bool = true,
+    rele: bool = true,
+    rele_tmos_mins: u32 = 60,
+    rele_targets: []const []const u8 = &.{ "x86_64-linux", "x86_64-windows" },
     secr: []const Secr = &.{},
 };
 
@@ -262,6 +266,9 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (c.ciiz.runs_on.len == 0 or c.ciiz.zig_vers.len == 0 or c.ciiz.zig_base.len == 0) return bad("ciiz.runs_on, zig_vers and zig_base must not be empty", .{});
     if (c.ciiz.job_tmos_mins < 1 or c.ciiz.job_tmos_mins > 360) return bad("ciiz.job_tmos_mins must be 1..360", .{});
     if (c.warn.acti_free_usd < 1 or c.warn.acti_rate_milli < 1) return bad("warn.acti_free_usd and acti_rate_milli must be 1 or more", .{});
+    if (c.ciiz.rele_tmos_mins < 1 or c.ciiz.rele_tmos_mins > 360) return bad("ciiz.rele_tmos_mins must be 1..360", .{});
+    if (c.ciiz.rele and c.ciiz.rele_targets.len == 0) return bad("ciiz.rele_targets must list a target", .{});
+    for (c.ciiz.rele_targets) |t| for (t) |ch| if (!(std.ascii.isLower(ch) or std.ascii.isDigit(ch) or ch == '_' or ch == '-')) return bad("ciiz.rele_targets entries are plain target names like x86_64-linux", .{});
     for (c.ciiz.secr) |s| if (s.name.len == 0 or s.vaul.len == 0) return bad("ciiz.secr rows need name and vaul", .{});
     for (c.mirr) |m| if (m.name.len == 0 or m.urlz.len == 0) return bad("mirr rows need name and urlz", .{});
 }
