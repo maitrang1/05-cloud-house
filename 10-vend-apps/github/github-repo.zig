@@ -24,6 +24,22 @@ const Repo = struct { name: []const u8 = "", default_branch: []const u8 = "", pr
 const Rule = struct { id: u64 = 0, name: []const u8 = "", target: []const u8 = "" };
 
 // ---- step 8: git identity, LF line endings ----
+// the repo folder must be its own git repo: make it when it is no repo at all; refuse when it sits inside another one (unless repo.nest_okay) ----
+pub fn ensureRepo(ctx: *Ctx) anyerror!?Outc {
+    const g = ctx.gitz("");
+    const top = try g.run(&.{ "rev-parse", "--show-toplevel" });
+    if (!top.okay()) {
+        const made = try g.run(&.{ "init", "-q", "-b", ctx.conf.repo.bran });
+        if (!made.okay()) return ctxm.fail("cannot start the git repo", made.err, "check git is installed and the --root folder is writable");
+        return null;
+    }
+    if (ctx.conf.repo.nest_okay) return null;
+    const real = std.Io.Dir.cwd().realPathFileAlloc(ctx.io, ctx.root, ctx.a) catch return null;
+    const have = std.mem.trimEnd(u8, top.text(), "/\\");
+    if (!std.mem.eql(u8, have, std.mem.trimEnd(u8, real, "/\\"))) return ctxm.fail("the folder sits inside another git repo", have, "pass a --root folder that is not inside another repo, or set repo.nest_okay to true on purpose");
+    return null;
+}
+
 pub fn gitzIden(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const nore = ctx.stat.valu("mail_nore");
     if (nore.len == 0) return ctxm.fail("no noreply email yet", "step 7 has not run", "run the same command again");
@@ -33,6 +49,7 @@ pub fn gitzIden(ctx: *Ctx, mode: Mode) anyerror!Outc {
     const okay = cur.okay() and std.mem.eql(u8, cur.text(), nore);
     if (okay) return .{ .done = nore };
     if (mode == .chec) return .{ .wait = "git identity not set" };
+    if (try ensureRepo(ctx)) |bad| return bad;
     const login = ctx.stat.valu("logi");
     const rows: [4][2][]const u8 = .{
         .{ "user.name", if (login.len > 0) login else "cloud-house" },
@@ -279,6 +296,34 @@ test "ruleTypes follows config flags, in order, with none when all are off" {
     try std.testing.expectEqualStrings("pull_request", ruleTypes(cf, &buf)[2].type);
     cf = .{ .dele_bloc = false, .forc_bloc = false, .pull_need = false };
     try std.testing.expectEqual(@as(usize, 0), ruleTypes(cf, &buf).len);
+}
+
+test "ensureRepo: makes a repo in a plain folder, accepts its own repo, refuses a folder inside another repo unless allowed" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.createDirPath(io, "outer/inner");
+    const base = try tmp.dir.realPathFileAlloc(io, ".", a);
+    var env = std.process.Environ.Map.init(a);
+    if (std.c.getenv("PATH")) |pp| try env.put("PATH", std.mem.span(pp));
+    try env.put("HOME", base);
+    try env.put("GIT_CONFIG_NOSYSTEM", "1");
+    try env.put("GIT_CEILING_DIRECTORIES", base); // the scratch folder lives inside a real repo: do not look above it
+    var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
+    var au: @import("audit-log.zig").Audit = .{ .a = a };
+    const outer = try std.fs.path.join(a, &.{ base, "outer" });
+    var c: Ctx = .{ .io = io, .a = a, .env = &env, .conf = .{}, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = "/h", .root = outer, .conf_dirz = "" };
+    _ = c.gitz("").run(&.{"--version"}) catch |e| if (e == error.Missing) return error.SkipZigTest else return e;
+    try std.testing.expect((try ensureRepo(&c)) == null); // no repo yet: init
+    try tmp.dir.access(io, "outer/.git", .{});
+    try std.testing.expect((try ensureRepo(&c)) == null); // its own repo: fine
+    c.root = try std.fs.path.join(a, &.{ base, "outer", "inner" });
+    try std.testing.expect((try ensureRepo(&c)) != null); // inside the outer repo: refused
+    c.conf.repo.nest_okay = true;
+    try std.testing.expect((try ensureRepo(&c)) == null);
 }
 
 test "ssh command names the key, the known_hosts file and accepts new hosts only" {

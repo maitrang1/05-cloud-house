@@ -22,7 +22,18 @@ pub const ApizErro = error{NoToken};
 const Mess = struct { message: []const u8 = "" };
 
 pub fn token(ctx: *Ctx) !?[]const u8 {
+    if (std.mem.eql(u8, ctx.conf.auth.mode, "gh")) return ghToken(ctx);
     return ctx.secret(CF.toke_keyz);
+}
+
+// gh mode: ask `gh` every run, so a refreshed scope list is used at once and no old token lingers in the vault ----
+fn ghToken(ctx: *Ctx) !?[]const u8 {
+    if (ctx.gh_tok.len > 0) return ctx.gh_tok;
+    const got = ctx.gitz("").tool(&.{ "gh", "auth", "token" }) catch return null;
+    if (!got.okay() or got.text().len == 0) return null;
+    ctx.gh_tok = try ctx.a.dupe(u8, got.text());
+    ctx.audi.hideAdd(ctx.gh_tok);
+    return ctx.gh_tok;
 }
 
 // one API call; `auth` adds the Bearer token and fails without one ----
@@ -96,6 +107,21 @@ pub fn refuse(ctx: *Ctx, r: http.Resp, what: []const u8) ctxm.Outc {
         else => "run the same command again; if it repeats, check https://www.githubstatus.com",
     };
     return ctxm.fail(what, why, fix);
+}
+
+test "gh mode takes the token from gh (cached per run), device mode needs the vault" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var env = std.process.Environ.Map.init(a);
+    var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
+    var au: @import("audit-log.zig").Audit = .{ .a = a };
+    var c: ctxm.Ctx = .{ .io = std.testing.io, .a = a, .env = &env, .conf = .{}, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = "/h", .root = "/r", .conf_dirz = "" };
+    c.conf.auth.mode = "gh";
+    c.gh_tok = "gho_cached_value";
+    try std.testing.expectEqualStrings("gho_cached_value", (try token(&c)).?);
+    c.conf.auth.mode = "device"; // no --live: the vault stays closed
+    try std.testing.expectError(error.NoPass, token(&c));
 }
 
 test "enc keeps safe characters and escapes the rest" {

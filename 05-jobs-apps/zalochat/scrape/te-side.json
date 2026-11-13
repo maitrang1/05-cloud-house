@@ -1,0 +1,14 @@
+{
+  "fetchAccountInfo": { "uid": "9001", "displayName": "Throwaway Me" },
+  "getAllFriends": [
+    { "userId": "f1", "displayName": "Friend One", "zaloName": "f.one", "avatar": "https://img.example/f1.png", "phoneNumber": "0900000001" },
+    { "userId": "f2", "displayName": "Friend Two", "zaloName": "f.two", "avatar": "https://img.example/f2.png" }
+  ],
+  "getAllGroups": { "gridVerMap": { "g1": "v1", "g2": "v2" } },
+  "getGroupInfo": { "__byArg": {
+    "g1": { "gridInfoMap": { "g1": { "groupId": "g1", "name": "Group One", "totalMember": 12 } } },
+    "g2": { "gridInfoMap": { "g2": { "groupId": "g2", "name": "Group Two", "totalMember": 5 } } } } },
+  "getGroupChatHistory": { "__byArg": {
+    "g1": { "groupMsgs": [ { "msgId": "m1", "uidFrom": "f1", "content": "hello g1", "ts": 1780000000000 }, { "msgId": "m2", "uidFrom": "f2", "content": "hi", "ts": 1780000001000 } ] },
+    "g2": { "groupMsgs": [ { "msgId": "m3", "uidFrom": "f1", "content": "second group", "ts": 1780000002000 } ] } } }
+}

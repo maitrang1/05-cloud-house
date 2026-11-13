@@ -88,6 +88,7 @@ pub fn run(ctx: *Ctx, table: []const Entry, mode: Mode) anyerror!Report {
         ctx.say("{d:0>2} {s}\n", .{ row.numb, row.name });
         const outc = acti(ctx, mode) catch |e| {
             ctx.say("   error: {s}\n", .{@errorName(e)});
+            if (ctx.vaul_why.len > 0) ctx.say("   why:   {s}\n   fix:   run the same command again\n", .{ctx.vaul_why});
             rep.stop_at = row.iden;
             rep.code = 1;
             try ctx.stat.save(ctx.io);

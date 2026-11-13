@@ -47,6 +47,8 @@ pub const Ctx = struct {
     // why the vault could not open, in plain words ----
     vaul_why: []const u8 = "",
     clip_when: i64 = 0,
+    // gh mode: the token read from `gh auth token` once per run (never a stale vaulted copy) ----
+    gh_tok: []const u8 = "",
 
     pub fn nowMsec(self: *const Ctx) i64 {
         return std.Io.Clock.real.now(self.io).toMilliseconds();
@@ -90,7 +92,13 @@ pub const Ctx = struct {
 
     // passphrase: the named environment variable, else typed hidden (twice for a new vault) ----
     fn passRead(self: *Ctx, fresh: bool) CtxErro![]const u8 {
-        if (self.env.get(self.conf.vaul.pass_envz)) |p| if (p.len > 0) return p;
+        if (self.env.get(self.conf.vaul.pass_envz)) |p| if (p.len > 0) {
+            if (p.len < CF.pass_minz) {
+                self.vaul_why = "the passphrase needs 8 characters or more";
+                return error.NoPass;
+            }
+            return p;
+        };
         out.err(self.io, "{s}", .{if (fresh) "New vault. Choose a passphrase (hidden): " else "Vault passphrase (hidden): "});
         const one = try self.a.dupe(u8, os.hideRead(self.io) orelse return error.NoPass);
         if (one.len < CF.pass_minz) {

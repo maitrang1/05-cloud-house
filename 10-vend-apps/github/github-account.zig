@@ -176,6 +176,8 @@ pub fn signMail(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if (std.mem.eql(u8, ctx.stat.valu("mail_veri"), "yes")) return .{ .done = "email verified" };
     if (std.mem.eql(u8, ctx.stat.valu("mail_told"), "yes")) return .{ .done = "link clicked (checked at step 5)" };
     if ((try api.token(ctx)) != null) return .{ .done = "checked at step 5" };
+    // an account that already existed (step 1 never asked for an email) has nothing to click; step 5 checks it through the API ----
+    if (ctx.stat.valu("mail").len == 0 and ctx.stat.valu("logi").len > 0) return .{ .done = "existing account (email checked at step 5)" };
     if (mode == .chec) return .{ .wait = "email link not clicked" };
     try hand(ctx, 2);
     ctx.say("   1. Open your inbox for {s}.\n   2. Click the link (or type the code) GitHub sent.\n", .{ctx.stat.valu("mail")});
