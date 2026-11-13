@@ -180,15 +180,21 @@ fn moveGone(io: std.Io, a: std.mem.Allocator, rules: conf.Push, to: []const u8, 
     for (gone.items) |rel| {
         say(io, try std.fmt.allocPrint(a, "{s} {s}\n", .{ if (live) "move out" else "would move out", rel }));
         if (!live) continue;
-        const src = try std.fs.path.join(a, &.{ to, rel });
-        var dest = try std.fs.path.join(a, &.{ rules.trash, rel });
-        if (cwd.access(io, dest, .{})) |_| {
-            dest = try std.mem.concat(a, u8, &.{ dest, try stamp(a, now_secs) });
-        } else |_| {}
-        if (std.fs.path.dirname(dest)) |d| try cwd.createDirPath(io, d);
-        try moveFile(io, a, cwd, src, dest);
+        try trashFile(io, a, rules.trash, to, rel, now_secs);
     }
     return @intCast(gone.items.len);
+}
+
+// move one file of the repo folder into the trash folder, same relative path; a name clash keeps both with a time suffix ----
+pub fn trashFile(io: std.Io, a: std.mem.Allocator, trash: []const u8, to: []const u8, rel: []const u8, now_secs: i64) !void {
+    const cwd = std.Io.Dir.cwd();
+    const src = try std.fs.path.join(a, &.{ to, rel });
+    var dest = try std.fs.path.join(a, &.{ trash, rel });
+    if (cwd.access(io, dest, .{})) |_| {
+        dest = try std.mem.concat(a, u8, &.{ dest, try stamp(a, now_secs) });
+    } else |_| {}
+    if (std.fs.path.dirname(dest)) |d| try cwd.createDirPath(io, d);
+    try moveFile(io, a, cwd, src, dest);
 }
 
 fn quiet(_: std.Io, _: []const u8) void {}

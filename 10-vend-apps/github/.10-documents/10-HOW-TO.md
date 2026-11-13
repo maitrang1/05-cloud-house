@@ -28,7 +28,7 @@ dry-run: nothing scanned, committed or pushed. Pass --live to publish.
 ```
 ```
 mirror: copied 7 · same 385 · denied 0 · too big 0 · moved to trash 0
-workflow: updated .github/workflows/build.yml
+workflows: updated 11 file(s), moved out 1 old file(s) in .github/workflows
 scan: 395 files checked, nothing risky
 published 754d671
 ```
@@ -44,11 +44,22 @@ Files you removed from your work folder are moved to `~/00_modules/zzzz-delete-f
 
 ---
 
-## Make a downloadable release
-Pick a new version each time. The cloud then builds every app for Linux and Windows and publishes the files on your repo's Releases page (about 15-20 minutes):
+## Test or build one app
+Nothing runs unless you name an app. `--app` takes the app's name or the tail of it; repeat it for more; `--app-all` does every app:
 ```
-cd /home/mai_trang/05-cloud-house-synch && git tag v0.1.0 && git push origin v0.1.0
+/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github test --from /home/mai_trang/00_modules/05-cloud-house --app github
+/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github build --from /home/mai_trang/00_modules/05-cloud-house --app github --target windows
 ```
+`build` without `--target` makes a normal exe for this machine in the app's `zig-out/bin`.
+
+---
+
+## Make a downloadable release (one app)
+Every app has its own cloud workflow, and its own tag. A tag named `<app>-v<version>` builds only that app for Linux and Windows and publishes its files on your repo's Releases page (about 3-5 minutes). The app name is its folder path with dashes:
+```
+cd /home/mai_trang/05-cloud-house-synch && git tag 10-vend-apps-github-v0.1.0 && git push origin 10-vend-apps-github-v0.1.0
+```
+A normal push only runs the tests of the apps whose folders changed.
 
 ---
 

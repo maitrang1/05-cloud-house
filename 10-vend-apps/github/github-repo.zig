@@ -190,10 +190,14 @@ fn wouldCommitFiles(ctx: *Ctx) ![]const []const u8 {
     const g = ctx.gitz("");
     const tracked = try g.run(&.{"ls-files"});
     const untracked = try g.run(&.{ "ls-files", "--others", "--exclude-standard" });
+    const deleted = try g.run(&.{ "ls-files", "--deleted" }); // gone from the folder: the commit removes them, there is nothing to read
+    var gone: std.StringHashMapUnmanaged(void) = .empty;
+    var dt = std.mem.tokenizeAny(u8, deleted.out, "\n\r");
+    while (dt.next()) |line| try gone.put(ctx.a, line, {});
     var list: std.ArrayList([]const u8) = .empty;
     for ([2][]const u8{ tracked.out, untracked.out }) |block| {
         var it = std.mem.tokenizeAny(u8, block, "\n\r");
-        while (it.next()) |line| try list.append(ctx.a, line);
+        while (it.next()) |line| if (!gone.contains(line)) try list.append(ctx.a, line);
     }
     return list.items;
 }
@@ -429,6 +433,17 @@ test "publish: commits and pushes what changed, says nothing to publish when cle
     const catchup = try publish(&c);
     try std.testing.expect(catchup == .done and std.mem.eql(u8, catchup.done, "nothing to publish"));
     try std.testing.expectEqualStrings("3", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
+    // a tracked file that left the folder is no scan target: the scan stays green and the next publish commits the removal
+    try tmp.dir.writeFile(io, .{ .sub_path = "work/b.txt", .data = "bee" });
+    _ = try publish(&c);
+    try tmp.dir.deleteFile(io, "work/b.txt");
+    c.stat.putz("scan_okay", "") catch {};
+    const after = try scanSecr(&c, .acts);
+    try std.testing.expect(after == .done);
+    const files = try wouldCommitFiles(&c);
+    for (files) |f| try std.testing.expect(!std.mem.eql(u8, f, "b.txt"));
+    _ = try publish(&c);
+    try std.testing.expectEqualStrings("5", (try rg.run(&.{ "rev-list", "--count", "main" })).text());
     // an unreachable remote fails loudly, keeps the commit
     try std.testing.expect((try c.gitz("").run(&.{ "remote", "set-url", "origin", "/no/such/remote.git" })).okay());
     const down = try publish(&c);

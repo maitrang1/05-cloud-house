@@ -38,11 +38,11 @@ Every key has a default. An unknown key stops the app and names the line and col
 | `scan.wind_kbyt` / `file_maxz_mbyt` | read window, biggest file | 512 · 100 | numbers |
 | `push.skip_dirs` | folders never copied | `.git`, `.github`, `zig-out`, `node_modules`, `.10-docs`, … | names |
 | `push.allo` / `deny` | files that may be copied / never copied | source, config templates, docs, root `LICENSE` + `README.md` | patterns |
-| `gate.cmd` / `tmos_secs` / `retr` | tests that must pass before a live publish (run in every app folder), time limit per app, retries of a red app (0..3); an empty `cmd` turns the gate off | `zig build test` · 900 · 1 | list, seconds, number |
+| `task.test_cmd` / `build_opt` / `tmos_secs` / `retr` | the local `test` command, the `-Doptimize` value of `build`, time limit per job, retries of a red job (0..3) | `zig build test` · `ReleaseSafe` · 900 · 1 | list, text, seconds, number |
 | `push.keep` | files in the copy the mirror never moves | `.gitignore`, `.gitattributes` | patterns |
 | `push.trash` | where removed files go | `{home}/00_modules/zzzz-delete-force-items/05-cloud-house-synch` | path |
 | `rule.*` | branch rule: block deletion, block force push | on | true, false |
-| `ciiz.*` | cloud build: file, runner (`runs_on`, 15-minute limit on slim runners), timeout, Zig version, release job (`rele_runs_on`, `rele_tmos_mins`, `rele_targets`) | see file | see file |
+| `ciiz.*` | cloud flows, one file per app in `dir_path`: runner (`runs_on`, 15-minute limit on slim runners), timeout, Zig version, release job (`rele_runs_on`, `rele_tmos_mins`, `rele_targets`); `drop` lists old workflow files to move to the trash | see file | see file |
 | `ghcr.onzz` | check for a container image | `false` | true, false |
 | `mirr` | extra git hosts to push to | none | rows |
 | `vaul.*` | passphrase variable and lock cost | `CLOUD_HOUSE_VAULT_PASS` · 3 · 65536 · 1 | name, numbers |

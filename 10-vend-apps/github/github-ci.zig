@@ -15,6 +15,8 @@ const ctxm = @import("app-ctx.zig");
 const Ctx = ctxm.Ctx;
 const Mode = ctxm.Mode;
 const Outc = ctxm.Outc;
+const tasks = @import("app-task.zig");
+const rpush = @import("repo-push.zig");
 
 const CF = .{ .runz_poll_secs = 5, .runz_wait_secs = 30, .kill_okay = "0" };
 
@@ -83,8 +85,63 @@ pub fn ciizSecr(ctx: *Ctx, mode: Mode) anyerror!Outc {
     return .{ .done = try std.fmt.allocPrint(ctx.a, "{d} secret(s) set", .{done}) };
 }
 
-// fill the workflow template from config; every knob lives in 00-config.json
-// the release job sits between two marker lines: keep its text (markers dropped) or cut it all out ----
+// the first line every generated workflow carries: only files with it may be moved out when their app is gone ----
+const MARK = "# made by the github app";
+
+pub const Flows = struct { apps: u32 = 0, changed: u32 = 0, dropped: u32 = 0 };
+
+fn flowRel(a: std.mem.Allocator, dir: []const u8, name: []const u8) ![]u8 {
+    return std.fmt.allocPrint(a, "{s}/{s}.yml", .{ std.mem.trimEnd(u8, dir, "/"), name });
+}
+
+// one workflow per app folder found in the repo folder, written when it differs from the file there; a dropped or orphaned generated file moves to the trash ----
+pub fn ciizRender(ctx: *Ctx, write: bool) !Flows {
+    const cf = ctx.conf.ciiz;
+    const raw = std.Io.Dir.cwd().readFileAlloc(ctx.io, cf.tmpl_file, ctx.a, .limited(64 * 1024)) catch return error.TemplateMissing;
+    const list = try tasks.apps(ctx.io, ctx.a, ctx.root, ctx.conf.push.skip_dirs);
+    var fl: Flows = .{ .apps = @intCast(list.len) };
+    var wanted: std.StringHashMapUnmanaged(void) = .empty;
+    for (list) |p| {
+        const name = try tasks.flat(ctx.a, p);
+        const rel = try flowRel(ctx.a, cf.dir_path, name);
+        try wanted.put(ctx.a, try std.fmt.allocPrint(ctx.a, "{s}.yml", .{name}), {});
+        const want = try tmplFill(ctx.a, raw, cf, name, p, rel);
+        const dest = try ctx.path(&.{ ctx.root, rel });
+        const have = std.Io.Dir.cwd().readFileAlloc(ctx.io, dest, ctx.a, .limited(256 * 1024)) catch null;
+        if (have != null and std.mem.eql(u8, have.?, want)) continue;
+        fl.changed += 1;
+        if (!write) continue;
+        if (std.fs.path.dirname(dest)) |d| try std.Io.Dir.cwd().createDirPath(ctx.io, d);
+        try std.Io.Dir.cwd().writeFile(ctx.io, .{ .sub_path = dest, .data = want });
+    }
+    const dir_abs = try ctx.path(&.{ ctx.root, cf.dir_path });
+    var dir = std.Io.Dir.cwd().openDir(ctx.io, dir_abs, .{ .iterate = true }) catch return fl;
+    defer dir.close(ctx.io);
+    var it = dir.iterate();
+    while (try it.next(ctx.io)) |ent| {
+        if (ent.kind != .file or !std.mem.endsWith(u8, ent.name, ".yml") or wanted.contains(ent.name)) continue;
+        var stale = false;
+        for (cf.drop) |d| if (std.mem.eql(u8, d, ent.name)) {
+            stale = true;
+        };
+        if (!stale) {
+            var f = dir.openFile(ctx.io, ent.name, .{}) catch continue;
+            defer f.close(ctx.io);
+            var head: [MARK.len]u8 = undefined;
+            const n = f.readPositionalAll(ctx.io, &head, 0) catch continue;
+            stale = std.mem.eql(u8, head[0..n], MARK);
+        }
+        if (!stale) continue;
+        fl.dropped += 1;
+        if (!write) continue;
+        if (ctx.conf.push.trash.len == 0) return error.NoTrashFolder;
+        try rpush.trashFile(ctx.io, ctx.a, ctx.conf.push.trash, ctx.root, try flowRel(ctx.a, cf.dir_path, ent.name[0 .. ent.name.len - 4]), ctx.nowSecs());
+    }
+    return fl;
+}
+
+// fill the workflow template for one app from config; every knob lives in 00-config.json ----
+// the release job sits between two marker lines: keep its text (markers dropped) or cut it all out
 fn releaseBlock(a: std.mem.Allocator, tmpl: []const u8, keep: bool) ![]u8 {
     const begin = "@@RELEASE_BEGIN@@\n";
     const end = "@@RELEASE_END@@\n";
@@ -94,76 +151,108 @@ fn releaseBlock(a: std.mem.Allocator, tmpl: []const u8, keep: bool) ![]u8 {
     return std.mem.concat(a, u8, &.{ tmpl[0..b], if (keep) inner else "", tmpl[e + end.len ..] });
 }
 
-// write the workflow from the template when it differs from the file in the repo folder; true = it changed ----
-pub fn ciizRender(ctx: *Ctx, write: bool) !bool {
-    const raw = std.Io.Dir.cwd().readFileAlloc(ctx.io, ctx.conf.ciiz.tmpl_file, ctx.a, .limited(64 * 1024)) catch return error.TemplateMissing;
-    const want = try tmplFill(ctx.a, raw, ctx.conf.ciiz);
-    const dest = try ctx.path(&.{ ctx.root, ctx.conf.ciiz.file_path });
-    const have = std.Io.Dir.cwd().readFileAlloc(ctx.io, dest, ctx.a, .limited(256 * 1024)) catch null;
-    if (have != null and std.mem.eql(u8, have.?, want)) return false;
-    if (write) {
-        if (std.fs.path.dirname(dest)) |d| try std.Io.Dir.cwd().createDirPath(ctx.io, d);
-        try std.Io.Dir.cwd().writeFile(ctx.io, .{ .sub_path = dest, .data = want });
-    }
-    return true;
-}
-
-fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig").Ciiz) ![]u8 {
-    var paths: std.ArrayList(u8) = .empty;
-    if (cf.paths.len > 0) {
-        try paths.appendSlice(a, "    paths:\n");
-        for (cf.paths) |p| try paths.print(a, "      - '{s}'\n", .{p});
-    }
-    const tags: []const u8 = if (cf.tags) "    tags: ['v*']\n" else "";
+fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig").Ciiz, app: []const u8, dir: []const u8, flow: []const u8) ![]u8 {
     const cache: []const u8 = if (cf.cache)
         "\n      - id: ZIGZ-CASH\n        uses: actions/cache@v6\n        with:\n          path: ~/.cache/zig\n          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}\n"
     else
         "";
-    const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@", "@@RELRUNNER@@" };
+    const keys = [_][]const u8{ "@@APPDIR@@", "@@APP@@", "@@FLOWPATH@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@", "@@RELRUNNER@@" };
     const timeout = try std.fmt.allocPrint(a, "{d}", .{cf.job_tmos_mins});
     const reltmo = try std.fmt.allocPrint(a, "{d}", .{cf.rele_tmos_mins});
     const targets = try std.mem.join(a, " ", cf.rele_targets);
-    const vals = [_][]const u8{ tags, paths.items, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache, reltmo, targets, cf.rele_runs_on };
+    const vals = [_][]const u8{ dir, app, flow, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache, reltmo, targets, cf.rele_runs_on };
     var cur = try releaseBlock(a, tmpl, cf.rele);
     for (keys, vals) |k, v| cur = try std.mem.replaceOwned(u8, a, cur, k, v);
     return cur;
 }
 
-test "tmplFill puts every config knob in and leaves no marker behind" {
+test "tmplFill puts every config knob and the app in, and leaves no marker behind" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
-    const tmpl = "@@TAGS@@@@PATHS@@|@@KILL@@|@@RUNNER@@|@@TIMEOUT@@|@@ZIGVERS@@|@@ZIGBASE@@|@@CACHE@@";
-    const out = try tmplFill(a, tmpl, .{ .paths = &.{"apps/x/**"}, .runs_on = "ubuntu-slim", .job_tmos_mins = 7, .cache = false });
+    const tmpl = "@@APP@@|@@APPDIR@@|@@FLOWPATH@@|@@KILL@@|@@RUNNER@@|@@TIMEOUT@@|@@ZIGVERS@@|@@ZIGBASE@@|@@CACHE@@";
+    const out = try tmplFill(a, tmpl, .{ .runs_on = "ubuntu-slim", .job_tmos_mins = 7, .cache = false }, "v-alpha", "v/alpha", ".github/workflows/v-alpha.yml");
     try std.testing.expect(std.mem.indexOf(u8, out, "@@") == null);
-    try std.testing.expect(std.mem.indexOf(u8, out, "      - 'apps/x/**'") != null);
-    try std.testing.expect(std.mem.indexOf(u8, out, "|ubuntu-slim|7|") != null);
+    try std.testing.expect(std.mem.startsWith(u8, out, "v-alpha|v/alpha|.github/workflows/v-alpha.yml|CI_KILL|ubuntu-slim|7|"));
     try std.testing.expect(std.mem.indexOf(u8, out, "actions/cache") == null);
 }
 
-test "the release job is kept with its targets and timeout, or cut out whole; the shipped template leaves no marker" {
+test "the shipped template is one app's flow: own paths, own tag, test job, release job or none" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
     const raw = try std.Io.Dir.cwd().readFileAlloc(std.testing.io, "20-build.yml", a, .limited(64 * 1024));
-    const on = try tmplFill(a, raw, .{ .rele_targets = &.{ "x86_64-linux", "aarch64-macos" }, .rele_tmos_mins = 45, .rele_runs_on = "runner-x" });
+    try std.testing.expect(std.mem.startsWith(u8, raw, MARK)); // the orphan sweep keys on this first line
+    const on = try tmplFill(a, raw, .{ .rele_targets = &.{ "x86_64-linux", "aarch64-macos" }, .rele_tmos_mins = 45, .rele_runs_on = "runner-x" }, "v-alpha", "v/alpha", ".github/workflows/v-alpha.yml");
     try std.testing.expect(std.mem.indexOf(u8, on, "@@") == null);
-    try std.testing.expect(std.mem.indexOf(u8, on, "gh release create") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "      - 'v/alpha/**'\n      - '.github/workflows/v-alpha.yml'") != null); // only this app's folder, plus the flow file itself
+    try std.testing.expect(std.mem.indexOf(u8, on, "tags: ['v-alpha-v*']") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "working-directory: v/alpha") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "zig build test") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "for t in x86_64-linux aarch64-macos; do") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "timeout-minutes: 45") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "cp LICENSE \"dist/") != null); // every download carries the license
-    // the release never runs on the 15-minute slim runner: its own runner name, one matrix job per app, a draft opened only at the end
-    try std.testing.expectEqual(@as(usize, 3), std.mem.count(u8, on, "runs-on: runner-x"));
-    try std.testing.expect(std.mem.indexOf(u8, on, "fromJSON(needs.rel-list.outputs.apps)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, on, "--draft=false") != null);
-    const off = try tmplFill(a, raw, .{ .rele = false });
+    try std.testing.expect(std.mem.indexOf(u8, on, "startsWith(github.ref, 'refs/tags/v-alpha-v')") != null);
+    try std.testing.expectEqual(@as(usize, 1), std.mem.count(u8, on, "gh release create")); // one release per app tag
+    try std.testing.expect(std.mem.indexOf(u8, on, "matrix") == null); // no shared job fan-out
+    try std.testing.expectEqual(@as(usize, 2), std.mem.count(u8, on, "runs-on:"));
+    try std.testing.expect(std.mem.indexOf(u8, on, "runs-on: runner-x") != null); // the release never rides the 15-minute slim runner
+    const off = try tmplFill(a, raw, .{ .rele = false }, "v-alpha", "v/alpha", ".github/workflows/v-alpha.yml");
     try std.testing.expect(std.mem.indexOf(u8, off, "@@") == null);
-    try std.testing.expect(std.mem.indexOf(u8, off, "release") == null);
-    try std.testing.expect(std.mem.indexOf(u8, off, "EXEZ-BUIL") != null); // the build job stays
+    try std.testing.expect(std.mem.indexOf(u8, off, "gh release") == null);
+    try std.testing.expect(std.mem.indexOf(u8, off, "EXEZ-TEST") != null); // the test job stays
 }
 
-fn fileAtRepo(ctx: *Ctx, rel: []const u8) !bool {
-    return std.Io.Dir.cwd().access(ctx.io, try ctx.path(&.{ ctx.root, rel }), .{}) catch null != null;
+fn put(dir: std.Io.Dir, path: []const u8, data: []const u8) !void {
+    if (std.fs.path.dirname(path)) |d| try dir.createDirPath(std.testing.io, d);
+    try dir.writeFile(std.testing.io, .{ .sub_path = path, .data = data });
+}
+
+test "ciizRender: one flow per app, idempotent, old build.yml and orphaned generated flows move to the trash, other files stay" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var repo = std.testing.tmpDir(.{});
+    defer repo.cleanup();
+    var bin = std.testing.tmpDir(.{});
+    defer bin.cleanup();
+    try put(repo.dir, "v/alpha/build.zig", "x");
+    try put(repo.dir, "v/beta/build.zig", "x");
+    try put(repo.dir, ".github/workflows/build.yml", "name: build\n"); // the old shared flow: no marker, named in drop
+    try put(repo.dir, ".github/workflows/mirror.yml", "name: gitlab-mirror\n"); // someone else's flow: never touched
+    try put(repo.dir, ".github/workflows/gone-app.yml", MARK ++ "\nname: gone-app\n"); // generated, its app is gone
+    var env = std.process.Environ.Map.init(a);
+    var st: @import("state-file.zig").State = .{ .a = a, .path = "" };
+    var au: @import("audit-log.zig").Audit = .{ .a = a };
+    var rb: [std.fs.max_path_bytes]u8 = undefined;
+    const root = try a.dupe(u8, rb[0..try repo.dir.realPath(std.testing.io, &rb)]);
+    var tb: [std.fs.max_path_bytes]u8 = undefined;
+    const trash = try a.dupe(u8, tb[0..try bin.dir.realPath(std.testing.io, &tb)]);
+    var cf: @import("config-load.zig").Conf = .{};
+    cf.ciiz.drop = &.{"build.yml"};
+    cf.ciiz.tmpl_file = "20-build.yml";
+    cf.push.trash = trash;
+    cf.push.skip_dirs = &.{ ".github", "zig-out" };
+    var c: Ctx = .{ .io = std.testing.io, .a = a, .env = &env, .conf = cf, .steps = .{ .vend = "gith", .step = &.{} }, .stat = &st, .audi = &au, .home = "/h", .root = root, .conf_dirz = "" };
+    const dry = try ciizRender(&c, false);
+    try std.testing.expectEqual(@as(u32, 2), dry.apps);
+    try std.testing.expectEqual(@as(u32, 2), dry.changed);
+    try std.testing.expectEqual(@as(u32, 2), dry.dropped); // build.yml and gone-app.yml
+    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/v-alpha.yml", .{})); // dry-run writes nothing
+    const live = try ciizRender(&c, true);
+    try std.testing.expectEqual(@as(u32, 2), live.changed);
+    const alpha = try repo.dir.readFileAlloc(std.testing.io, ".github/workflows/v-alpha.yml", a, .limited(64 * 1024));
+    try std.testing.expect(std.mem.indexOf(u8, alpha, "'v/alpha/**'") != null);
+    try std.testing.expect(std.mem.indexOf(u8, alpha, "v/beta") == null); // one app per file
+    try repo.dir.access(std.testing.io, ".github/workflows/v-beta.yml", .{});
+    try repo.dir.access(std.testing.io, ".github/workflows/mirror.yml", .{}); // untouched
+    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/build.yml", .{}));
+    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/gone-app.yml", .{}));
+    try bin.dir.access(std.testing.io, ".github/workflows/build.yml", .{}); // moved, never deleted
+    try bin.dir.access(std.testing.io, ".github/workflows/gone-app.yml", .{});
+    const again = try ciizRender(&c, true);
+    try std.testing.expectEqual(@as(u32, 0), again.changed); // second run is a no-op
+    try std.testing.expectEqual(@as(u32, 0), again.dropped);
 }
 
 fn latestRunz(ctx: *Ctx) !?Runz {
@@ -182,7 +271,9 @@ fn workflowFresh(ctx: *Ctx) anyerror!bool {
 // ---- step 16: CI workflow file + first green run ----
 pub fn ciizFile(ctx: *Ctx, mode: Mode) anyerror!Outc {
     if (!ctx.conf.ciiz.onzz) return .{ .skip = "skipped: ciiz.onzz is off" };
-    const have_file = try fileAtRepo(ctx, ctx.conf.ciiz.file_path);
+    const found = ciizRender(ctx, false) catch |e| return ctxm.fail("cannot prepare the workflow files", @errorName(e), "keep 20-build.yml next to 00-config.json and the repo folder readable");
+    if (found.apps == 0) return .{ .wait = "no app folders in the repo folder yet; publish first, then run again" };
+    const have_file = found.changed == 0 and found.dropped == 0;
     if (have_file) {
         const run = latestRunz(ctx) catch |e| {
             if (e != error.RunzRefused) return e;
@@ -195,17 +286,13 @@ pub fn ciizFile(ctx: *Ctx, mode: Mode) anyerror!Outc {
     }
     if (mode == .chec) return .{ .wait = "workflow not run yet" };
     if (!have_file) {
-        const raw = std.Io.Dir.cwd().readFileAlloc(ctx.io, ctx.conf.ciiz.tmpl_file, ctx.a, .limited(64 * 1024)) catch return ctxm.fail("the CI template is missing", ctx.conf.ciiz.tmpl_file, "keep 20-build.yml next to 00-config.json");
-        const tmpl = try tmplFill(ctx.a, raw, ctx.conf.ciiz);
-        const dest = try ctx.path(&.{ ctx.root, ctx.conf.ciiz.file_path });
-        if (std.fs.path.dirname(dest)) |d| std.Io.Dir.cwd().createDirPath(ctx.io, d) catch return ctxm.fail("cannot make the workflow folder", dest, "check the folder is writable");
-        std.Io.Dir.cwd().writeFile(ctx.io, .{ .sub_path = dest, .data = tmpl }) catch return ctxm.fail("cannot write the workflow file", dest, "check the folder is writable");
+        _ = ciizRender(ctx, true) catch |e| return ctxm.fail("cannot write the workflow files", @errorName(e), "check the repo folder is writable and push.trash is set");
         const g = ctx.gitz(try @import("github-repo.zig").sshzCommandPub(ctx));
-        _ = try g.run(&.{ "add", ctx.conf.ciiz.file_path });
+        _ = try g.run(&.{ "add", "-A", ctx.conf.ciiz.dir_path });
         const c = try g.run(&.{ "commit", "-m", ctx.conf.ciiz.comm_text });
-        if (!c.okay()) return ctxm.fail("cannot commit the workflow", c.err, "check git identity (step 8)");
+        if (!c.okay()) return ctxm.fail("cannot commit the workflows", c.err, "check git identity (step 8)");
         const p = try g.run(&.{ "push" });
-        if (!p.okay()) return ctxm.fail("cannot push the workflow", p.err, "check the SSH key (step 9)");
+        if (!p.okay()) return ctxm.fail("cannot push the workflows", p.err, "check the SSH key (step 9)");
     }
     ctx.say("   waiting for the first Actions run...\n", .{});
     const until = ctx.nowSecs() + ctx.conf.ciiz.runz_tmos_secs;

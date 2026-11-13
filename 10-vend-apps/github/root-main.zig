@@ -3,7 +3,7 @@
 // Flo: parse args > load 00-config.json + 10-steps.json > open state + audit > build vendor table > dispatch command > exit code
 // Cre: 2026-11-12                          - | Mod: 2026-11-12
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
-// Inp: none - `github plan|run|status|revoke|version|help` -- --config --steps --home --root --live
+// Inp: none - `github plan|run|status|revoke|push|publish|test|build|version|help` -- --config --steps --home --root --from --live --app --app-all --target
 // Out: exit 0 ok · 1 failed · 2 usage/config · 3 secret found · 4 waiting on a human
 // Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github && zig build run -- plan
 // Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github
@@ -21,10 +21,10 @@ const acct = @import("github-account.zig");
 const repo = @import("github-repo.zig");
 const ci = @import("github-ci.zig");
 const rpush = @import("repo-push.zig");
-const gate = @import("test-gate.zig");
+const task = @import("app-task.zig");
 const sshc = @import("ssh-conf.zig");
 
-const CF = .{ .conf_file = "00-config.json", .step_file = "10-steps.json", .args_maxz = 64 };
+const CF = .{ .conf_file = "00-config.json", .step_file = "10-steps.json", .args_maxz = 64, .apps_maxz = 16 };
 
 const Args = struct {
     cmd: []const u8 = "",
@@ -34,6 +34,10 @@ const Args = struct {
     root: ?[]const u8 = null,
     from: ?[]const u8 = null,
     live: bool = false,
+    app_all: bool = false,
+    target: ?[]const u8 = null,
+    app_buf: [CF.apps_maxz][]const u8 = undefined,
+    app_cnt: usize = 0,
 };
 
 const USAGE =
@@ -47,6 +51,8 @@ const USAGE =
     \\  status    print the saved state file
     \\  push      one-way mirror: --from always overwrites --root, gone files move to the trash (dry-run unless --live)
     \\  publish   push, then scan, commit and push to GitHub in one go (--from --root; dry-run unless --live)
+    \\  test      run one app's tests, here (--from, and --app <name> or --app-all)
+    \\  build     build one app, here (--from, and --app <name> or --app-all; --target for a cross build)
     \\  revoke    kill the login token and vaulted secrets this app made (never the repo)
     \\  version   print the app version
     \\  help      print this text
@@ -57,6 +63,9 @@ const USAGE =
     \\  --home   <path>   where state, vault, audit log and keys live
     \\  --root   <path>   the repo folder to set up (required for run/plan/push)
     \\  --from   <path>   push only: the working tree to copy from
+    \\  --app    <name>   test/build: one app, by name or the tail of it (github); repeat for more
+    \\  --app-all         test/build: every app (never the default; nothing runs without --app or --app-all)
+    \\  --target <name>   build only: a cross target from ciiz.rele_targets (windows, x86_64-linux); no flag = native
     \\  --live            allow calls that write (sign-up, push, secrets); omit for a dry-run
     \\
     \\Exit codes: 0 ok · 1 failed · 2 usage/config · 3 secret found · 4 waiting on a human
@@ -72,6 +81,15 @@ fn parseArgs(args: []const []const u8) ?Args {
         const v = args[i];
         if (std.mem.eql(u8, v, "--live")) {
             a.live = true;
+        } else if (std.mem.eql(u8, v, "--app-all")) {
+            a.app_all = true;
+        } else if (std.mem.eql(u8, v, "--app") and i + 1 < args.len and a.app_cnt < CF.apps_maxz) {
+            i += 1;
+            a.app_buf[a.app_cnt] = args[i];
+            a.app_cnt += 1;
+        } else if (std.mem.eql(u8, v, "--target") and i + 1 < args.len) {
+            i += 1;
+            a.target = args[i];
         } else if (std.mem.eql(u8, v, "--config") and i + 1 < args.len) {
             i += 1;
             a.conf_path = args[i];
@@ -133,6 +151,61 @@ fn die(code: u8) noreturn {
     std.process.exit(code);
 }
 
+// `test` and `build`: one app at a time, named by the user; nothing runs without --app or --app-all ----
+fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Map, cf: conf.Conf, p: Args) noreturn {
+    const is_build = std.mem.eql(u8, p.cmd, "build");
+    const from = p.from orelse {
+        out.fail(io, "no source folder given", "--from is required", "pass --from <working tree>");
+        die(2);
+    };
+    if ((p.app_cnt == 0 and !p.app_all) or (p.app_cnt > 0 and p.app_all)) {
+        out.fail(io, "no app chosen", "name one app with --app <name> (repeat for more) or use --app-all, never both", "e.g. github test --from <work tree> --app github");
+        die(2);
+    }
+    if (p.target != null and !is_build) {
+        out.fail(io, "--target is for build only", "test always runs on this machine", "drop --target");
+        die(2);
+    }
+    const list = task.apps(io, a, from, cf.push.skip_dirs) catch |e| {
+        out.fail(io, "cannot list the apps", @errorName(e), "check --from is the work tree");
+        die(1);
+    };
+    var chosen: std.ArrayList([]const u8) = .empty;
+    if (p.app_all) {
+        chosen.appendSlice(a, list) catch die(1);
+    } else for (p.app_buf[0..p.app_cnt]) |q| {
+        const got = task.pick(a, list, q) catch die(1);
+        switch (got) {
+            .ok => |path| chosen.append(a, path) catch die(1),
+            .none => {
+                out.fail(io, std.fmt.allocPrint(a, "no app named {s}", .{q}) catch "no such app", "no app folder ends with that name", "use the name or the tail of it, like github or facebook-scrape");
+                die(2);
+            },
+            .many => |m| {
+                out.fail(io, std.fmt.allocPrint(a, "{s} matches {d} apps", .{ q, m.len }) catch "name matches many apps", "the name must pick exactly one", "use a longer tail, like facebook-scrape");
+                die(2);
+            },
+        }
+    }
+    var targets: []const []const u8 = &.{};
+    if (p.target) |t| {
+        targets = task.targetsFor(a, cf.ciiz.rele_targets, t) catch die(1);
+        if (targets.len == 0) {
+            out.fail(io, std.fmt.allocPrint(a, "no target named {s}", .{t}) catch "no such target", "ciiz.rele_targets lists the cross targets", "use a name or a piece of one, like windows");
+            die(2);
+        }
+    }
+    const jobs = (if (is_build) task.buildJobs(a, cf.task, chosen.items, targets) else task.testJobs(a, cf.task, chosen.items)) catch die(1);
+    var real: task.Real = .{ .io = io, .a = a, .env = env, .tmos_secs = cf.task.tmos_secs };
+    const res = task.runJobs(io, a, cf.task, from, jobs, task.realRun, &real, &pushSay) catch |e| {
+        out.fail(io, "run failed", @errorName(e), "check --from is the work tree and zig is on PATH");
+        die(1);
+    };
+    for (res.bad) |f| out.fail(io, std.fmt.allocPrint(a, "{s} is red", .{f.label}) catch "a job is red", if (f.tail.len > 0) f.tail else "the command failed", "fix it in that app folder, then run again");
+    out.say(io, "\n{s}: {d} green · {d} red\n", .{ p.cmd, res.ok, res.bad.len });
+    die(if (res.bad.len == 0) 0 else 1);
+}
+
 pub fn main(init: std.process.Init) void {
     const io = init.io;
     var arena = init.arena;
@@ -150,7 +223,7 @@ pub fn main(init: std.process.Init) void {
         out.say(io, "github {s}\n", .{build_options.version});
         die(0);
     }
-    const KNOWN = [_][]const u8{ "plan", "run", "status", "revoke", "push", "publish" };
+    const KNOWN = [_][]const u8{ "plan", "run", "status", "revoke", "push", "publish", "test", "build" };
     var okay = false;
     for (KNOWN) |k| {
         if (std.mem.eql(u8, parsed.cmd, k)) okay = true;
@@ -187,6 +260,7 @@ pub fn main(init: std.process.Init) void {
         out.fail(io, "steps problem", conf.why, "fix 10-steps.json and run again");
         die(2);
     };
+    if (std.mem.eql(u8, parsed.cmd, "test") or std.mem.eql(u8, parsed.cmd, "build")) taskMain(io, a, env, cf, parsed);
     if (std.mem.eql(u8, parsed.cmd, "push")) {
         const from = parsed.from orelse {
             out.fail(io, "no source folder given", "--from is required for push", "pass --from <working tree> and --root <repo folder>");
@@ -216,19 +290,6 @@ pub fn main(init: std.process.Init) void {
             out.fail(io, bad.fail.what, bad.fail.why, bad.fail.fix);
             die(2);
         }
-        if (cf.gate.cmd.len > 0 and !parsed.live) {
-            out.say(io, "gate: would run `{s} ...` in every app folder before publishing\n", .{cf.gate.cmd[0]});
-        } else if (parsed.live) {
-            var real: gate.Real = .{ .io = io, .a = a, .env = env, .tmos_secs = cf.gate.tmos_secs };
-            const red = gate.gate(io, a, cf.gate, cf.push.skip_dirs, from, gate.realRun, &real, &pushSay) catch |e| {
-                out.fail(io, "test gate failed to run", @errorName(e), "check --from is the work tree; set gate.cmd to [] in 00-config.json to turn the gate off");
-                die(1);
-            };
-            if (red) |f| {
-                out.fail(io, std.fmt.allocPrint(a, "tests are red in {s}", .{f.app}) catch "tests are red", if (f.tail.len > 0) f.tail else "the test command failed", "fix the test (run it in that folder), then publish again; nothing was mirrored or pushed");
-                die(1);
-            }
-        }
         const rep = rpush.push(io, a, cf.push, from, ctx.root, parsed.live, ctx.nowSecs(), &pushSay) catch |e| {
             out.fail(io, "mirror failed", @errorName(e), pushFix(e));
             die(1);
@@ -238,7 +299,7 @@ pub fn main(init: std.process.Init) void {
             out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
             die(1);
         };
-        if (flow) out.say(io, "workflow: {s} {s}\n", .{ if (parsed.live) "updated" else "would update", cf.ciiz.file_path });
+        if (flow.changed + flow.dropped > 0) out.say(io, "workflows: {s} {d} file(s), {s} {d} old file(s) in {s}\n", .{ if (parsed.live) "updated" else "would update", flow.changed, if (parsed.live) "moved out" else "would move out", flow.dropped, cf.ciiz.dir_path });
         if (!parsed.live) {
             out.say(io, "dry-run: nothing scanned, committed or pushed. Pass --live to publish.\n", .{});
             die(0);
@@ -341,7 +402,7 @@ test {
     _ = @import("repo-push.zig");
     _ = @import("ssh-conf.zig");
     _ = @import("step-engine.zig");
-    _ = @import("test-gate.zig");
+    _ = @import("app-task.zig");
 }
 // ========================___THIS_IS_THE_END___========================
 // ===============___HOLD_YOUR_BREATH_AND_COUNT_TO_TEN___===============

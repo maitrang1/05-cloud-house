@@ -114,17 +114,16 @@ pub const Secr = struct { name: []const u8, vaul: []const u8, need: bool = false
 
 pub const Ciiz = struct {
     onzz: bool = true,
-    file_path: []const u8 = ".github/workflows/build.yml",
+    dir_path: []const u8 = ".github/workflows",
+    drop: []const []const u8 = &.{},
     tmpl_file: []const u8 = "20-build.yml",
-    comm_text: []const u8 = "ci: add build workflow",
+    comm_text: []const u8 = "ci: add per-app workflows",
     kill_name: []const u8 = "CI_KILL",
     runz_tmos_secs: u32 = 900,
     runs_on: []const u8 = "ubuntu-slim",
     job_tmos_mins: u32 = 15,
     zig_vers: []const u8 = "0.16.0",
     zig_base: []const u8 = "https://ziglang.org/download",
-    paths: []const []const u8 = &.{},
-    tags: bool = true,
     cache: bool = true,
     rele: bool = true,
     rele_runs_on: []const u8 = "ubuntu-latest",
@@ -137,8 +136,8 @@ pub const Ghcr = struct { onzz: bool = false };
 
 pub const Mirr = struct { name: []const u8, urlz: []const u8, onzz: bool = false };
 
-// tests that must pass before a live publish; an empty cmd turns the gate off ----
-pub const Gate = struct { cmd: []const []const u8 = &.{}, tmos_secs: u32 = 900, retr: u32 = 1 };
+// local `test` and `build` commands: one app at a time, named by the user; build_opt is the -Doptimize value ----
+pub const Task = struct { test_cmd: []const []const u8 = &.{ "zig", "build", "test" }, build_opt: []const u8 = "ReleaseSafe", tmos_secs: u32 = 900, retr: u32 = 1 };
 
 pub const Push = struct {
     skip_dirs: []const []const u8 = &.{},
@@ -173,7 +172,7 @@ pub const Conf = struct {
     ghcr: Ghcr = .{},
     mirr: []const Mirr = &.{},
     push: Push = .{},
-    gate: Gate = .{},
+    task: Task = .{},
     warn: Warn = .{},
 };
 
@@ -293,7 +292,10 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (c.gitz.tmos_secs < 5) return bad("gitz.tmos_secs must be 5 or more", .{});
     if (c.sshz.keyz_name.len == 0 or std.mem.indexOfAny(u8, c.sshz.keyz_name, "/\\") != null) return bad("sshz.keyz_name must be a plain file name", .{});
     if (!oneOf(c.sshz.kind, &.{ "deploy", "account" })) return bad("sshz.kind must be deploy or account", .{});
-    if (c.gate.tmos_secs < 10 or c.gate.retr > 3) return bad("gate.tmos_secs must be 10 or more and gate.retr 0..3", .{});
+    if (c.task.tmos_secs < 10 or c.task.retr > 3) return bad("task.tmos_secs must be 10 or more and task.retr 0..3", .{});
+    if (c.task.test_cmd.len == 0 or c.task.build_opt.len == 0) return bad("task.test_cmd and task.build_opt must not be empty", .{});
+    if (c.ciiz.dir_path.len == 0 or std.mem.startsWith(u8, c.ciiz.dir_path, "/") or std.mem.indexOf(u8, c.ciiz.dir_path, "..") != null) return bad("ciiz.dir_path must be a relative folder like .github/workflows", .{});
+    for (c.ciiz.drop) |d| if (d.len == 0 or std.mem.indexOfAny(u8, d, "/\\") != null) return bad("ciiz.drop entries are plain file names", .{});
     if (c.warn.perc < 1 or c.warn.perc > 100) return bad("warn.perc must be 1..100", .{});
     for (c.scan.mark) |m| if (m.pref.len < 4) return bad("scan.mark pref must be 4 letters or more", .{});
     if (c.ciiz.runs_on.len == 0 or c.ciiz.zig_vers.len == 0 or c.ciiz.zig_base.len == 0) return bad("ciiz.runs_on, zig_vers and zig_base must not be empty", .{});
@@ -377,6 +379,22 @@ test "unknown key is refused with line and column; bad values are refused" {
     c.sshz.kind = "repo";
     try std.testing.expectError(error.BadValue, check(&c, false));
     c.sshz.kind = "account";
+    try check(&c, false);
+    c = .{};
+    c.task.test_cmd = &.{};
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c = .{};
+    c.task.retr = 4;
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c = .{};
+    c.ciiz.dir_path = "../outside";
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c.ciiz.dir_path = "/abs";
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c = .{};
+    c.ciiz.drop = &.{"sub/build.yml"};
+    try std.testing.expectError(error.BadValue, check(&c, false));
+    c.ciiz.drop = &.{"build.yml"};
     try check(&c, false);
 }
 
