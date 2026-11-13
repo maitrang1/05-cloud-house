@@ -105,7 +105,7 @@ fn runCmd(gpa: std.mem.Allocator, io: std.Io, cmd: Cmd, argv: []const []const u8
         try vaul1.putz("gith.user", ghix.login);
         try vaul1.save();
     }
-    var gith1 = gith.Gith{ .gpa = gpa, .io = io, .http = &http1, .apiz = cfg.gith.apiz, .vers = cfg.gith.vers, .toke = vaul1.getz("gith.token") orelse ghix.token, .owne = vaul1.getz("gith.owner") orelse "", .repo = cfg.gitl.proj };
+    var gith1 = gith.Gith{ .gpa = gpa, .io = io, .http = &http1, .apiz = cfg.gith.apiz, .vers = cfg.gith.vers, .toke = vaul1.getz("gith.token") orelse ghix.token, .owne = vaul1.getz("gith.owner") orelse "", .repo = cfg.gith.repo };
 
     var eng1 = engi.Engi{ .gpa = gpa, .io = io, .stat = &stat1, .inpu = &queu, .guid = .{ .open = cfg.guid.open, .clip = cfg.guid.clip, .poll = cfg.guid.poll, .wait = cfg.guid.wait } };
 

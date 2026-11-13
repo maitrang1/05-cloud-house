@@ -35,7 +35,7 @@ fn confMake(gpa: std.mem.Allocator) !@import("config-load.zig").Conf {
         .vaul = .{ .envz = "", .time = 1, .memo = 64, .para = 1 },
         .repo = .{ .path = "", .bran = "main", .remo = "origin" },
         .gitl = .{ .host = "gitlab.com", .webz = "", .apiz = "", .oaut = "", .user = "", .proj = "cloud-house", .visi = "public", .push = "", .sign = "", .sett = sett },
-        .gith = .{ .apiz = "", .vers = "2022-11-28", .secr = "GITLAB_MIRROR_TOKEN", .ping = "", .varz = "MIRROR_ON", .flow = "mirror.yml", .tmpl = "", .mess = "", .wait = 0 },
+        .gith = .{ .apiz = "", .repo = "cloud-house", .vers = "2022-11-28", .secr = "GITLAB_MIRROR_TOKEN", .ping = "", .varz = "MIRROR_ON", .flow = ".github/workflows/mirror.yml", .tmpl = "mirror-template.yml", .mess = "", .wait = 0 },
         .oaut = .{ .clid = mock.clid, .scop = "api" },
         .logi = .{ .orde = &.{"devi"} },
         .tool = .{ .gitz = "git", .sshk = "ssh-keygen", .sshz = "ssh", .glab = "glab", .ghcl = "gh", .time = 20 },
@@ -125,6 +125,13 @@ test "full setup flow: account, project, mirror, all through the real engine" {
     mock1.runzDone = true; // the mirror workflow "ran" in the mock already
     try eng1.runAll(&mirr.rows(&mirrCtx));
 
+    // the mirror workflow was written into the copy folder from the template, every marker filled
+    const flow = try std.Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(gpa, &.{ repo, ".github/workflows/mirror.yml" }), gpa, .limited(64 * 1024));
+    try std.testing.expect(std.mem.indexOf(u8, flow, "ghowner/cloud-house.git") != null or std.mem.indexOf(u8, flow, "/cloud-house.git") != null);
+    try std.testing.expect(std.mem.indexOf(u8, flow, "secrets.GITLAB_MIRROR_TOKEN") != null);
+    try std.testing.expect(std.mem.indexOf(u8, flow, "branches: [main]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, flow, "{") == null or std.mem.indexOf(u8, flow, "{branch}") == null);
+
     // assertions: the whole chain actually happened, in the mock's own state
     try std.testing.expectEqual(@as(?stat.Mark, .done), eng1.stat.markGetz("acc-devi-logi"));
     try std.testing.expect(mock1.keys.items.len == 1 and !mock1.keys.items[0].gone);
@@ -143,6 +150,42 @@ test "full setup flow: account, project, mirror, all through the real engine" {
 fn varzGetz(self: *mock.Mock, name: []const u8) ?[]const u8 {
     for (self.varz.items) |item| if (std.mem.eql(u8, item.keyz, name)) return item.valu;
     return null;
+}
+
+test "an account you named in gitlab-account.json that already exists skips the name, sign-up and email steps" {
+    const io = std.testing.io;
+    var aren = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer aren.deinit();
+    const gpa = aren.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const root = try tmp.dir.realPathFileAlloc(io, ".", gpa);
+    var logz = audi.Audi{ .io = io, .path = "" };
+    var pare = std.process.Environ.Map.init(gpa);
+    var tl = try tool.Tool.init(gpa, io, &logz, &pare, 20);
+    const mock1 = try mock.Mock.star(io);
+    defer mock1.halt();
+    var conf1 = try confMake(gpa);
+    var vaul1 = try vaul.Vaul.open(gpa, io, try std.fs.path.join(gpa, &.{ root, "vault.json" }), "correct horse battery", testCost);
+    try vaul1.putz("gith.user", "someone-else"); // the GitHub login differs from the GitLab name on purpose
+    var stat1 = try stat.Stat.load(gpa, io, try std.fs.path.join(gpa, &.{ root, "state.json" }));
+    var http1 = http.Http.init(gpa, io, &logz, testOpts);
+    defer http1.deinit();
+    var gitl1 = gitl.Gitl{ .gpa = gpa, .http = &http1, .apiz = try mock1.base(gpa, "/api/v4"), .oaut = try mock1.base(gpa, "/oauth") };
+    var cx = acct.Ctx{ .gpa = gpa, .conf = &conf1, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1, .tool = &tl };
+    mock1.sign("ann"); // the account exists on GitLab already
+    conf1.gitl.user = "ann";
+    const name = try acct.Ctx.freeName(&cx, gpa);
+    try std.testing.expect(name == .okay and std.mem.eql(u8, name.okay, "ann"));
+    try std.testing.expectEqualStrings("ann", vaul1.getz("gitl.user").?);
+    const sign = try acct.Ctx.signUpzz(&cx, gpa);
+    try std.testing.expect(sign == .okay);
+    const mail = try acct.Ctx.emailLink(&cx, gpa);
+    try std.testing.expect(mail == .okay);
+    // without the named account the same name is "taken" (someone else's), as before
+    conf1.gitl.user = "";
+    try vaul1.putz("gith.user", "ann");
+    try std.testing.expectError(error.UsernameTaken, acct.Ctx.freeName(&cx, gpa));
 }
 
 // ========================___THIS_IS_THE_END___========================

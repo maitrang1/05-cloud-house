@@ -19,7 +19,7 @@ pub const Conf = struct {
     vaul: struct { envz: []const u8, time: u32, memo: u32, para: u24 },
     repo: struct { path: []const u8, bran: []const u8, remo: []const u8 },
     gitl: struct { host: []const u8, webz: []const u8, apiz: []const u8, oaut: []const u8, user: []const u8, proj: []const u8, visi: []const u8, push: []const u8, sign: []const u8, sett: std.json.Value },
-    gith: struct { apiz: []const u8, vers: []const u8, secr: []const u8, ping: []const u8, varz: []const u8, flow: []const u8, tmpl: []const u8, mess: []const u8, wait: u32 },
+    gith: struct { apiz: []const u8, repo: []const u8, vers: []const u8, secr: []const u8, ping: []const u8, varz: []const u8, flow: []const u8, tmpl: []const u8, mess: []const u8, wait: u32 },
     oaut: struct { clid: []const u8, scop: []const u8 },
     logi: struct { orde: []const []const u8 },
     tool: struct { gitz: []const u8, sshk: []const u8, sshz: []const u8, glab: []const u8, ghcl: []const u8, time: u32 },
@@ -123,6 +123,7 @@ test "shipped config parses" {
     };
     try std.testing.expectEqualStrings("gitlab.com", conf.gitl.host);
     try std.testing.expectEqual(@as(u32, 90), conf.toke.days);
+    try std.testing.expectEqualStrings("05-cloud-house", conf.gith.repo); // the GitHub repo the mirror job lives in
     try std.testing.expect(std.mem.startsWith(u8, conf.repo.path, "{home}/")); // no machine name in the shipped file
     try std.testing.expect(std.mem.startsWith(u8, conf.sshz.file, "{home}/"));
     try std.testing.expect(!conf.gitl.sett.object.get("shared_runners_enabled").?.bool);

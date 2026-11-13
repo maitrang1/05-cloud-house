@@ -1,0 +1,41 @@
+name: gitlab-mirror
+
+on:
+  push:
+    branches: [{branch}]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# one mirror run at a time; a newer push waits for the running one
+concurrency:
+  group: gitlab-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    # kill switch: set the repo variable {varz} to anything but 1 and the mirror stops
+    if: ${{ vars.{varz} == '1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: CODE-PULL
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # fast-forward only: a diverged GitLab refuses the push, nothing is forced
+      - id: PUSH-GITL
+        env:
+          MIRROR_TOKEN: ${{ secrets.{secr} }}
+        run: git push --quiet "https://oauth2:${MIRROR_TOKEN}@{host}/{path}.git" "HEAD:refs/heads/{branch}"
+
+      - id: PING-SEND
+        if: ${{ always() }}
+        env:
+          PING_URL: ${{ secrets.{ping} }}
+          JOBZ_STAT: ${{ job.status }}
+        run: |
+          if [ -z "$PING_URL" ]; then echo "no ping url set"; exit 0; fi
+          if [ "$JOBZ_STAT" = "success" ]; then curl -fsS -m 10 --retry 3 "$PING_URL" > /dev/null; else curl -fsS -m 10 --retry 3 "$PING_URL/fail" > /dev/null; fi

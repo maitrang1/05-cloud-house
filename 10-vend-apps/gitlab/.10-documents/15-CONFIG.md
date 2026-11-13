@@ -29,7 +29,7 @@ Every key must be present. An unknown key stops the app and names the line and c
 | `gitl.proj` / `visi` | project name and visibility | `cloud-house` · `public` | `visi`: `private`, `internal`, `public` |
 | `gitl.push` / `sign` | push URL and sign-up page templates | see file | templates |
 | `gitl.sett` | project features, all switched off | see file | GitLab project settings |
-| `gith.*` | the GitHub side: secret and variable names, workflow file and template, wait | `GITLAB_MIRROR_TOKEN` · `.github/workflows/mirror.yml` | text, number |
+| `gith.repo` / `*` | the GitHub repo that runs the mirror, then its secret and variable names, workflow file and template, wait | `GITLAB_MIRROR_TOKEN` · `.github/workflows/mirror.yml` | text, number |
 | `oaut.clid` / `scop` | your OAuth app id (private account file) and its scope | empty · `api` | text |
 | `logi.orde` | reserved, not used yet | `vault`, `devi`, `glab` | list |
 | `tool.*` | programs to run | `git` · `ssh-keygen` · `ssh` · `glab` · `gh` · 120 s | names, number |

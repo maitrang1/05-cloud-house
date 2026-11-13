@@ -20,7 +20,7 @@ cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab
 ```
 /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab/zig-out/bin/gitlab-setup run --go
 ```
-5. When it asks you to sign up or confirm an email, do it in the browser. Press the key it names, and run the same command again.
+5. If you already have a GitLab account, put its name in `~/.05-cloud-house-secre/gitlab-account.json` as `{"user": "your-gitlab-name"}`: the app then skips the sign-up and email steps. A new account: when it asks you to sign up or confirm an email, do it in the browser, press the key it names, and run the same command again.
 
 ---
 

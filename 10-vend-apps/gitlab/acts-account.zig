@@ -35,9 +35,20 @@ pub const Ctx = struct {
         return .{ .okay = ghUs };
     }
 
-    // step 2: pick the username (GitHub login first), check it is free
+    // the owner named an account in gitlab-account.json (gitl.user) and it already exists on GitLab: no sign-up and no email step
+    fn existing(self: *Ctx) !bool {
+        const name = self.conf.gitl.user;
+        if (name.len == 0) return false;
+        return (try self.gitl.userFind(name)) != null;
+    }
+
+    // step 2: pick the username (your own account if you named one, else the GitHub login), check it is free
     pub fn freeName(ctx: *anyopaque, gpa: std.mem.Allocator) !engi.Done {
         const self: *Ctx = @ptrCast(@alignCast(ctx));
+        if (try self.existing()) {
+            try self.vaul.putz(CF.vaulGlUser, self.conf.gitl.user);
+            return .{ .okay = self.conf.gitl.user };
+        }
         const want = self.vaul.getz(CF.vaulGhUser) orelse self.conf.gitl.user;
         if (want.len == 0) return error.NoUsername;
         if (try self.gitl.userFind(want)) |_| return error.UsernameTaken;
@@ -49,6 +60,7 @@ pub const Ctx = struct {
     // step 3: guided sign-up; detected once the public lookup finds the username
     pub fn signUpzz(ctx: *anyopaque, gpa: std.mem.Allocator) !engi.Done {
         const self: *Ctx = @ptrCast(@alignCast(ctx));
+        if (try self.existing()) return .{ .okay = "account exists" };
         const name = self.vaul.getz(CF.vaulGlUser) orelse return error.NoUsername;
         return pollDone(self, gpa, self.conf.gitl.sign, struct {
             fn f(c: *anyopaque) anyerror!bool {
@@ -65,6 +77,7 @@ pub const Ctx = struct {
     pub fn emailLink(ctx: *anyopaque, gpa: std.mem.Allocator) !engi.Done {
         _ = gpa;
         const self: *Ctx = @ptrCast(@alignCast(ctx));
+        if (try self.existing()) return .{ .okay = "existing account: no email step" };
         return .{
             .wait = .{
                 .line = .{ "Open your inbox and click the GitLab link, if one arrived.", "Type g once done, or if GitHub sign-in skipped this.", "" },
@@ -123,7 +136,7 @@ pub const Ctx = struct {
     }
 
     // shared guided-step helper: open url (if any), poll, mark the step done on success
-    // `glab auth token`: a token when glab is logged in to this host, null when it is not, error when glab is not installed
+    // `glab config get token` (glab has no `auth token`): a token when glab is logged in to this host, null when it is not, error when glab is not installed
     fn glabToken(self: *Ctx) !?[]const u8 {
         const pair = [_]conf.Pair{.{ "host", self.conf.gitl.host }};
         const args = try conf.argvFill(self.gpa, self.conf.glab.toke, &pair);
@@ -140,7 +153,7 @@ pub const Ctx = struct {
         try self.vaul.putz(CF.vaulGlToke, toke);
     }
 
-    // no OAuth app id: log in through the `glab` program instead. The human runs one command in another terminal; we poll `glab auth token` until it answers
+    // no OAuth app id: log in through the `glab` program instead. The human runs one command in another terminal; we poll `glab config get token` until it answers
     fn glabLogi(self: *Ctx, gpa: std.mem.Allocator) !engi.Done {
         if (try self.glabToken()) |toke| {
             try self.glabKeep(toke);

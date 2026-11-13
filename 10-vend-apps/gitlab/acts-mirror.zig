@@ -50,8 +50,21 @@ pub const Ctx = struct {
         try self.gith.secrPutz(self.conf.gith.secr, toke);
         self.stat.data.idsz.secrIden = self.stat.data.idsz.secrIden + 1;
         if ((try self.gith.varzGetz(self.conf.gith.varz)) == null) try self.gith.varzMake(self.conf.gith.varz, "1");
-        _ = gpa;
-        return .{ .okay = "secret + variable set" };
+        const wrote = try self.flowWrite(gpa);
+        return .{ .okay = if (wrote) "secret + variable set, workflow written (publish commits it)" else "secret + variable set, workflow already in place" };
+    }
+
+    // the mirror workflow in the copy folder: filled from the template, written only when it differs; `github publish` commits and pushes it
+    fn flowWrite(self: *Ctx, gpa: std.mem.Allocator) !bool {
+        const raw = std.Io.Dir.cwd().readFileAlloc(self.io, self.conf.gith.tmpl, gpa, .limited(64 * 1024)) catch return error.TemplateMissing;
+        const path = self.vaul.getz("gitl.proj_path") orelse return error.NoProject;
+        const text = try conf.tmplFill(gpa, raw, &.{ .{ "branch", self.conf.repo.bran }, .{ "varz", self.conf.gith.varz }, .{ "secr", self.conf.gith.secr }, .{ "ping", self.conf.gith.ping }, .{ "host", self.conf.gitl.host }, .{ "path", path } });
+        const dest = try std.fs.path.join(gpa, &.{ self.conf.repo.path, self.conf.gith.flow });
+        const have = std.Io.Dir.cwd().readFileAlloc(self.io, dest, gpa, .limited(256 * 1024)) catch null;
+        if (have != null and std.mem.eql(u8, have.?, text)) return false;
+        if (std.fs.path.dirname(dest)) |d| try std.Io.Dir.cwd().createDirPath(self.io, d);
+        try std.Io.Dir.cwd().writeFile(self.io, .{ .sub_path = dest, .data = text });
+        return true;
     }
 
     // step 14: rotate 14 days before expiry
