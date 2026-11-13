@@ -166,23 +166,27 @@ fn taskMain(io: std.Io, a: std.mem.Allocator, env: *const std.process.Environ.Ma
         out.fail(io, "--target is for build only", "test always runs on this machine", "drop --target");
         die(2);
     }
-    const list = task.apps(io, a, from, cf.push.skip_dirs) catch |e| {
+    const paths = task.apps(io, a, from, cf.push.skip_dirs) catch |e| {
         out.fail(io, "cannot list the apps", @errorName(e), "check --from is the work tree");
         die(1);
     };
-    var chosen: std.ArrayList([]const u8) = .empty;
+    const list = task.namesAll(a, paths) catch {
+        out.fail(io, "two apps share a short name", "their last two folder names match too", "rename one app folder");
+        die(2);
+    };
+    var chosen: std.ArrayList(task.Named) = .empty;
     if (p.app_all) {
         chosen.appendSlice(a, list) catch die(1);
     } else for (p.app_buf[0..p.app_cnt]) |q| {
         const got = task.pick(a, list, q) catch die(1);
         switch (got) {
-            .ok => |path| chosen.append(a, path) catch die(1),
+            .ok => |x| chosen.append(a, x) catch die(1),
             .none => {
-                out.fail(io, std.fmt.allocPrint(a, "no app named {s}", .{q}) catch "no such app", "no app folder ends with that name", "use the name or the tail of it, like github or facebook-scrape");
+                out.fail(io, std.fmt.allocPrint(a, "no app named {s}", .{q}) catch "no such app", "no app has that short name", "use the short name, like github or facebook-scrape");
                 die(2);
             },
             .many => |m| {
-                out.fail(io, std.fmt.allocPrint(a, "{s} matches {d} apps", .{ q, m.len }) catch "name matches many apps", "the name must pick exactly one", "use a longer tail, like facebook-scrape");
+                out.fail(io, std.fmt.allocPrint(a, "{s} matches {d} apps", .{ q, m.len }) catch "name matches many apps", "the name must pick exactly one", "use the short name, like facebook-scrape");
                 die(2);
             },
         }
@@ -296,7 +300,7 @@ pub fn main(init: std.process.Init) void {
         };
         out.say(io, "mirror: copied {d} · same {d} · denied {d} · too big {d} · moved to trash {d}\n", .{ rep.copied, rep.same, rep.denied, rep.big, rep.moved });
         const flow = ci.ciizRender(&ctx, parsed.live) catch |e| {
-            out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
+            if (e == error.NameClash) out.fail(io, "two apps share a short name", "their last two folder names match too; no workflow was written", "rename one app folder") else out.fail(io, "workflow file failed", @errorName(e), "keep 20-build.yml next to 00-config.json");
             die(1);
         };
         if (flow.changed + flow.dropped > 0) out.say(io, "workflows: {s} {d} file(s), {s} {d} old file(s) in {s}\n", .{ if (parsed.live) "updated" else "would update", flow.changed, if (parsed.live) "moved out" else "would move out", flow.dropped, cf.ciiz.dir_path });

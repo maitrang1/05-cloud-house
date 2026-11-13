@@ -1,13 +1,13 @@
 # made by the github app from 20-build.yml: one file per app, edits are overwritten
-name: 10-vend-apps-gitlab
+name: oracle
 
 on:
   push:
     branches: [main]
     paths:
-      - '10-vend-apps/gitlab/**'
-      - '.github/workflows/10-vend-apps-gitlab.yml'
-    tags: ['10-vend-apps-gitlab-v*']
+      - '10-vend-apps/oracle/**'
+      - '.github/workflows/oracle.yml'
+    tags: ['oracle-v*']
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ permissions:
 
 # one run per ref: a newer push cancels the older one (saves free minutes)
 concurrency:
-  group: 10-vend-apps-gitlab-${{ github.ref }}
+  group: oracle-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,11 +44,11 @@ jobs:
           echo "$HOME/zig" >> "$GITHUB_PATH"
 
       - id: EXEZ-TEST
-        working-directory: 10-vend-apps/gitlab
+        working-directory: 10-vend-apps/oracle
         run: zig build test
-  # a tag like 10-vend-apps-gitlab-v0.1.0 builds this app only and publishes its own release
+  # a tag like oracle-v0.1.0 builds this app only and publishes its own release
   release:
-    if: ${{ startsWith(github.ref, 'refs/tags/10-vend-apps-gitlab-v') && vars.CI_KILL != '1' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/oracle-v') && vars.CI_KILL != '1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -70,12 +70,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
-          name="10-vend-apps-gitlab"
+          name="oracle"
           mkdir -p dist
           for t in x86_64-linux x86_64-windows; do
-            (cd "10-vend-apps/gitlab" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
+            (cd "10-vend-apps/oracle" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
             mkdir -p "dist/${name}-${t}"
-            find "10-vend-apps/gitlab/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${name}-${t}/" \;
+            find "10-vend-apps/oracle/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${name}-${t}/" \;
             [ -f LICENSE ] && cp LICENSE "dist/${name}-${t}/"
             case "$t" in
               *windows*) (cd dist && zip -qr "${name}-${t}.zip" "${name}-${t}") ;;

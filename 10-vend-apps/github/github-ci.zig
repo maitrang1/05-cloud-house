@@ -98,11 +98,12 @@ fn flowRel(a: std.mem.Allocator, dir: []const u8, name: []const u8) ![]u8 {
 pub fn ciizRender(ctx: *Ctx, write: bool) !Flows {
     const cf = ctx.conf.ciiz;
     const raw = std.Io.Dir.cwd().readFileAlloc(ctx.io, cf.tmpl_file, ctx.a, .limited(64 * 1024)) catch return error.TemplateMissing;
-    const list = try tasks.apps(ctx.io, ctx.a, ctx.root, ctx.conf.push.skip_dirs);
+    const list = try tasks.namesAll(ctx.a, try tasks.apps(ctx.io, ctx.a, ctx.root, ctx.conf.push.skip_dirs));
     var fl: Flows = .{ .apps = @intCast(list.len) };
     var wanted: std.StringHashMapUnmanaged(void) = .empty;
-    for (list) |p| {
-        const name = try tasks.flat(ctx.a, p);
+    for (list) |x| {
+        const name = x.name;
+        const p = x.path;
         const rel = try flowRel(ctx.a, cf.dir_path, name);
         try wanted.put(ctx.a, try std.fmt.allocPrint(ctx.a, "{s}.yml", .{name}), {});
         const want = try tmplFill(ctx.a, raw, cf, name, p, rel);
@@ -238,18 +239,29 @@ test "ciizRender: one flow per app, idempotent, old build.yml and orphaned gener
     try std.testing.expectEqual(@as(u32, 2), dry.apps);
     try std.testing.expectEqual(@as(u32, 2), dry.changed);
     try std.testing.expectEqual(@as(u32, 2), dry.dropped); // build.yml and gone-app.yml
-    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/v-alpha.yml", .{})); // dry-run writes nothing
+    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/alpha.yml", .{})); // dry-run writes nothing
     const live = try ciizRender(&c, true);
     try std.testing.expectEqual(@as(u32, 2), live.changed);
-    const alpha = try repo.dir.readFileAlloc(std.testing.io, ".github/workflows/v-alpha.yml", a, .limited(64 * 1024));
+    const alpha = try repo.dir.readFileAlloc(std.testing.io, ".github/workflows/alpha.yml", a, .limited(64 * 1024));
     try std.testing.expect(std.mem.indexOf(u8, alpha, "'v/alpha/**'") != null);
     try std.testing.expect(std.mem.indexOf(u8, alpha, "v/beta") == null); // one app per file
-    try repo.dir.access(std.testing.io, ".github/workflows/v-beta.yml", .{});
+    try repo.dir.access(std.testing.io, ".github/workflows/beta.yml", .{});
     try repo.dir.access(std.testing.io, ".github/workflows/mirror.yml", .{}); // untouched
     try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/build.yml", .{}));
     try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/gone-app.yml", .{}));
     try bin.dir.access(std.testing.io, ".github/workflows/build.yml", .{}); // moved, never deleted
     try bin.dir.access(std.testing.io, ".github/workflows/gone-app.yml", .{});
+    // two apps with the same last two folders: no workflow is written at all
+    try put(repo.dir, "w/alpha/build.zig", "x");
+    try put(repo.dir, "x/w/alpha/build.zig", "x");
+    try std.testing.expectError(error.NameClash, ciizRender(&c, true));
+    try repo.dir.deleteFile(std.testing.io, "x/w/alpha/build.zig");
+    const again0 = try ciizRender(&c, true); // w/alpha now clashes by last folder with v/alpha: both take two folders, old short-named files become orphans
+    try std.testing.expectEqual(@as(u32, 3), again0.apps);
+    try repo.dir.access(std.testing.io, ".github/workflows/v-alpha.yml", .{});
+    try repo.dir.access(std.testing.io, ".github/workflows/w-alpha.yml", .{});
+    try std.testing.expectError(error.FileNotFound, repo.dir.access(std.testing.io, ".github/workflows/alpha.yml", .{}));
+    try bin.dir.access(std.testing.io, ".github/workflows/alpha.yml", .{}); // the renamed app's old flow moved, never deleted
     const again = try ciizRender(&c, true);
     try std.testing.expectEqual(@as(u32, 0), again.changed); // second run is a no-op
     try std.testing.expectEqual(@as(u32, 0), again.dropped);

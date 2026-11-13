@@ -56,7 +56,7 @@ fn slashed(a: std.mem.Allocator, path: []const u8) ![]u8 {
     return out;
 }
 
-// the app's one flat name: its folder path with slashes turned into dashes; it names the workflow file and the release tag ----
+// a folder path with slashes turned into dashes (10-vend-apps/github > 10-vend-apps-github) ----
 pub fn flat(a: std.mem.Allocator, path: []const u8) ![]u8 {
     const out = try a.dupe(u8, std.mem.trim(u8, path, "/\\"));
     std.mem.replaceScalar(u8, out, '/', '-');
@@ -64,17 +64,49 @@ pub fn flat(a: std.mem.Allocator, path: []const u8) ![]u8 {
     return out;
 }
 
-pub const Pick = union(enum) { ok: []const u8, none, many: []const []const u8 };
+pub const Named = struct { path: []const u8, name: []const u8 };
 
-// a name picks one app: the whole flat name, or the tail of it after a dash (github > 10-vend-apps-github); a path works too ----
-pub fn pick(a: std.mem.Allocator, list: []const []const u8, query: []const u8) !Pick {
+// the last n folder names of a path, joined with dashes ----
+fn tail(a: std.mem.Allocator, path: []const u8, n: usize) ![]u8 {
+    const p = std.mem.trim(u8, path, "/");
+    var start: usize = p.len;
+    var seen: usize = 0;
+    while (start > 0) : (start -= 1) {
+        if (p[start - 1] == '/') {
+            seen += 1;
+            if (seen == n) break;
+        }
+    }
+    return flat(a, p[start..]);
+}
+
+// every app's short name: its last folder (github); two apps with the same last folder both take their last two (facebook-scrape); a clash that is left stops everything ----
+pub fn namesAll(a: std.mem.Allocator, paths: []const []const u8) ![]const Named {
+    var out: std.ArrayList(Named) = .empty;
+    for (paths) |p| {
+        const one = try tail(a, p, 1);
+        var clash = false;
+        for (paths) |o| if (!std.mem.eql(u8, o, p) and std.mem.eql(u8, try tail(a, o, 1), one)) {
+            clash = true;
+        };
+        try out.append(a, .{ .path = p, .name = if (clash) try tail(a, p, 2) else one });
+    }
+    for (out.items, 0..) |x, i| for (out.items[0..i]) |y| if (std.mem.eql(u8, x.name, y.name)) return error.NameClash;
+    return out.items;
+}
+
+pub const Pick = union(enum) { ok: Named, none, many: []const Named };
+
+// a query picks one app: its short name, its whole flat path, or the tail of that after a dash (10-vend-apps-github > github); two matches are refused ----
+pub fn pick(a: std.mem.Allocator, list: []const Named, query: []const u8) !Pick {
     const q = try flat(a, query);
     if (q.len == 0) return .none;
-    var hits: std.ArrayList([]const u8) = .empty;
-    for (list) |p| {
-        const f = try flat(a, p);
-        if (std.mem.eql(u8, f, q)) return .{ .ok = p };
-        if (f.len > q.len and std.mem.endsWith(u8, f, q) and f[f.len - q.len - 1] == '-') try hits.append(a, p);
+    for (list) |x| if (std.mem.eql(u8, x.name, q)) return .{ .ok = x };
+    var hits: std.ArrayList(Named) = .empty;
+    for (list) |x| {
+        const f = try flat(a, x.path);
+        if (std.mem.eql(u8, f, q)) return .{ .ok = x };
+        if (f.len > q.len and std.mem.endsWith(u8, f, q) and f[f.len - q.len - 1] == '-') try hits.append(a, x);
     }
     if (hits.items.len == 1) return .{ .ok = hits.items[0] };
     if (hits.items.len == 0) return .none;
@@ -89,18 +121,19 @@ pub fn targetsFor(a: std.mem.Allocator, all: []const []const u8, want: []const u
     return out.items;
 }
 
-pub fn testJobs(a: std.mem.Allocator, t: conf.Task, paths: []const []const u8) ![]const Job {
+pub fn testJobs(a: std.mem.Allocator, t: conf.Task, apps_: []const Named) ![]const Job {
     var out: std.ArrayList(Job) = .empty;
-    for (paths) |p| try out.append(a, .{ .label = try flat(a, p), .path = p, .argv = t.test_cmd });
+    for (apps_) |x| try out.append(a, .{ .label = x.name, .path = x.path, .argv = t.test_cmd });
     return out.items;
 }
 
 // no target = a plain native build into zig-out/bin; a target builds into its own zig-out/<target> so two targets never mix ----
-pub fn buildJobs(a: std.mem.Allocator, t: conf.Task, paths: []const []const u8, targets: []const []const u8) ![]const Job {
+pub fn buildJobs(a: std.mem.Allocator, t: conf.Task, apps_: []const Named, targets: []const []const u8) ![]const Job {
     var out: std.ArrayList(Job) = .empty;
     const opt = try std.fmt.allocPrint(a, "-Doptimize={s}", .{t.build_opt});
-    for (paths) |p| {
-        const name = try flat(a, p);
+    for (apps_) |x| {
+        const name = x.name;
+        const p = x.path;
         if (targets.len == 0) {
             try out.append(a, .{ .label = name, .path = p, .argv = try a.dupe([]const u8, &.{ "zig", "build", opt }) });
             continue;
@@ -204,20 +237,40 @@ test "apps: every folder with a build.zig, sorted, skip folders left out, the tr
     try std.testing.expectEqualStrings("w/alpha", got[2]);
 }
 
-test "flat and pick: whole name, tail after a dash, a path; never a piece of a word; two matches are refused" {
+test "namesAll: the last folder, the last two on a clash, a clash that is left stops" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
-    const list: []const []const u8 = &.{ "05-jobs/facebook/scrape", "05-jobs/zalochat/scrape", "10-vend/github", "10-vend/gitlab" };
+    const got = try namesAll(a, &.{ "05-jobs/facebook/scrape", "05-jobs/zalochat/scrape", "10-vend/github", "10-vend/gitlab" });
+    try std.testing.expectEqualStrings("facebook-scrape", got[0].name);
+    try std.testing.expectEqualStrings("zalochat-scrape", got[1].name);
+    try std.testing.expectEqualStrings("github", got[2].name);
+    try std.testing.expectEqualStrings("gitlab", got[3].name);
+    try std.testing.expectEqualStrings("10-vend/github", got[2].path);
+    // same last two folders too: no honest short name exists
+    try std.testing.expectError(error.NameClash, namesAll(a, &.{ "a/x/scrape", "b/x/scrape" }));
+    // a one-folder name that equals another app's two-folder name is also a clash
+    try std.testing.expectError(error.NameClash, namesAll(a, &.{ "x/scrape", "y/x/scrape", "facebook-scrape", "z/facebook/scrape" }));
+}
+
+test "flat and pick: short name, flat path, tail of it, a path; never a piece of a word; two matches are refused" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const list = try namesAll(a, &.{ "05-jobs/facebook/scrape", "05-jobs/zalochat/scrape", "10-vend/github", "10-vend/gitlab" });
     try std.testing.expectEqualStrings("10-vend-github", try flat(a, "10-vend/github"));
-    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "github")).ok);
-    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "10-vend-github")).ok);
-    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "10-vend/github/")).ok);
-    try std.testing.expectEqualStrings("05-jobs/facebook/scrape", (try pick(a, list, "facebook-scrape")).ok);
+    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "github")).ok.path);
+    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "10-vend-github")).ok.path);
+    try std.testing.expectEqualStrings("10-vend/github", (try pick(a, list, "10-vend/github/")).ok.path);
+    try std.testing.expectEqualStrings("05-jobs/facebook/scrape", (try pick(a, list, "facebook-scrape")).ok.path);
     try std.testing.expect((try pick(a, list, "hub")) == .none); // a piece of a word is no match
     try std.testing.expect((try pick(a, list, "")) == .none);
     try std.testing.expect((try pick(a, list, "nothing")) == .none);
     try std.testing.expectEqual(@as(usize, 2), (try pick(a, list, "scrape")).many.len);
+    // an exact short name wins over a longer name that only ends the same way
+    const tricky = try namesAll(a, &.{ "10/github", "20/old-github" });
+    try std.testing.expectEqualStrings("10/github", (try pick(a, tricky, "github")).ok.path);
+    try std.testing.expectEqualStrings("20/old-github", (try pick(a, tricky, "old-github")).ok.path);
 }
 
 test "jobs: test uses the config command, build is native without a target and keeps one folder per target with one" {
@@ -225,19 +278,21 @@ test "jobs: test uses the config command, build is native without a target and k
     defer arena.deinit();
     const a = arena.allocator();
     const t: conf.Task = .{};
-    const tj = try testJobs(a, t, &.{ "v/alpha", "v/beta" });
+    const two = try namesAll(a, &.{ "v/alpha", "v/beta" });
+    const tj = try testJobs(a, t, two);
     try std.testing.expectEqual(@as(usize, 2), tj.len);
-    try std.testing.expectEqualStrings("v-alpha", tj[0].label);
+    try std.testing.expectEqualStrings("alpha", tj[0].label);
+    try std.testing.expectEqualStrings("v/alpha", tj[0].path);
     try std.testing.expectEqualStrings("test", tj[0].argv[2]);
-    const nat = try buildJobs(a, t, &.{"v/alpha"}, &.{});
+    const nat = try buildJobs(a, t, two[0..1], &.{});
     try std.testing.expectEqual(@as(usize, 1), nat.len);
     try std.testing.expectEqualStrings("-Doptimize=ReleaseSafe", nat[0].argv[2]);
     try std.testing.expectEqual(@as(usize, 3), nat[0].argv.len);
     const all: []const []const u8 = &.{ "x86_64-linux", "x86_64-windows" };
     const win = try targetsFor(a, all, "windows");
     try std.testing.expectEqual(@as(usize, 1), win.len);
-    const cross = try buildJobs(a, t, &.{"v/alpha"}, win);
-    try std.testing.expectEqualStrings("v-alpha (x86_64-windows)", cross[0].label);
+    const cross = try buildJobs(a, t, two[0..1], win);
+    try std.testing.expectEqualStrings("alpha (x86_64-windows)", cross[0].label);
     try std.testing.expectEqualStrings("-Dtarget=x86_64-windows", cross[0].argv[2]);
     try std.testing.expectEqualStrings("zig-out/x86_64-windows", cross[0].argv[5]);
     try std.testing.expectEqual(@as(usize, 0), (try targetsFor(a, all, "macos")).len);

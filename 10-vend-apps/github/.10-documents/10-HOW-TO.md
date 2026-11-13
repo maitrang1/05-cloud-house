@@ -45,7 +45,7 @@ Files you removed from your work folder are moved to `~/00_modules/zzzz-delete-f
 ---
 
 ## Test or build one app
-Nothing runs unless you name an app. `--app` takes the app's name or the tail of it; repeat it for more; `--app-all` does every app:
+Nothing runs unless you name an app. `--app` takes the app's short name (its last folder, like `github`; `facebook-scrape` and `zalochat-scrape` for the two `scrape` apps); repeat it for more; `--app-all` does every app:
 ```
 /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github test --from /home/mai_trang/00_modules/05-cloud-house --app github
 /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github build --from /home/mai_trang/00_modules/05-cloud-house --app github --target windows
@@ -55,9 +55,9 @@ Nothing runs unless you name an app. `--app` takes the app's name or the tail of
 ---
 
 ## Make a downloadable release (one app)
-Every app has its own cloud workflow, and its own tag. A tag named `<app>-v<version>` builds only that app for Linux and Windows and publishes its files on your repo's Releases page (about 3-5 minutes). The app name is its folder path with dashes:
+Every app has its own cloud workflow, and its own tag. A tag named `<name>-v<version>` builds only that app for Linux and Windows and publishes its files on your repo's Releases page (about 3-5 minutes). The name is the app's short name:
 ```
-cd /home/mai_trang/05-cloud-house-synch && git tag 10-vend-apps-github-v0.1.0 && git push origin 10-vend-apps-github-v0.1.0
+cd /home/mai_trang/05-cloud-house-synch && git tag github-v0.1.0 && git push origin github-v0.1.0
 ```
 A normal push only runs the tests of the apps whose folders changed.
 

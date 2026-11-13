@@ -1,13 +1,13 @@
 # made by the github app from 20-build.yml: one file per app, edits are overwritten
-name: 10-vend-apps-cf-cron
+name: cron-job-org
 
 on:
   push:
     branches: [main]
     paths:
-      - '10-vend-apps/cf-cron/**'
-      - '.github/workflows/10-vend-apps-cf-cron.yml'
-    tags: ['10-vend-apps-cf-cron-v*']
+      - '10-vend-apps/cron-job-org/**'
+      - '.github/workflows/cron-job-org.yml'
+    tags: ['cron-job-org-v*']
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ permissions:
 
 # one run per ref: a newer push cancels the older one (saves free minutes)
 concurrency:
-  group: 10-vend-apps-cf-cron-${{ github.ref }}
+  group: cron-job-org-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,11 +44,11 @@ jobs:
           echo "$HOME/zig" >> "$GITHUB_PATH"
 
       - id: EXEZ-TEST
-        working-directory: 10-vend-apps/cf-cron
+        working-directory: 10-vend-apps/cron-job-org
         run: zig build test
-  # a tag like 10-vend-apps-cf-cron-v0.1.0 builds this app only and publishes its own release
+  # a tag like cron-job-org-v0.1.0 builds this app only and publishes its own release
   release:
-    if: ${{ startsWith(github.ref, 'refs/tags/10-vend-apps-cf-cron-v') && vars.CI_KILL != '1' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/cron-job-org-v') && vars.CI_KILL != '1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -70,12 +70,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
-          name="10-vend-apps-cf-cron"
+          name="cron-job-org"
           mkdir -p dist
           for t in x86_64-linux x86_64-windows; do
-            (cd "10-vend-apps/cf-cron" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
+            (cd "10-vend-apps/cron-job-org" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
             mkdir -p "dist/${name}-${t}"
-            find "10-vend-apps/cf-cron/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${name}-${t}/" \;
+            find "10-vend-apps/cron-job-org/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${name}-${t}/" \;
             [ -f LICENSE ] && cp LICENSE "dist/${name}-${t}/"
             case "$t" in
               *windows*) (cd dist && zip -qr "${name}-${t}.zip" "${name}-${t}") ;;
