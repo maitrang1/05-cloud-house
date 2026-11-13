@@ -50,14 +50,40 @@ jobs:
           if [ -z "$HEALTHCHECKS_URL" ]; then echo "no ping url set"; exit 0; fi
           if [ "$JOBZ_STAT" = "success" ]; then curl -fsS -m 10 --retry 3 "$HEALTHCHECKS_URL" > /dev/null; else curl -fsS -m 10 --retry 3 "$HEALTHCHECKS_URL/fail" > /dev/null; fi
 @@RELEASE_BEGIN@@
-  # a tag like v0.1.0 builds the release files and publishes them as a GitHub Release
-  release:
+  # a tag like v0.1.0 publishes a GitHub Release: one parallel job per app builds its files and attaches them; the release stays a hidden draft until every app is in
+  rel-list:
     needs: build
     if: ${{ startsWith(github.ref, 'refs/tags/v') && vars.@@KILL@@ != '1' }}
-    runs-on: @@RUNNER@@
+    runs-on: @@RELRUNNER@@
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      apps: ${{ steps.APPS-LIST.outputs.apps }}
+    steps:
+      - id: CODE-PULL
+        uses: actions/checkout@v7
+
+      - id: APPS-LIST
+        run: |
+          apps=$(git ls-files '*/build.zig' | sed 's|/build.zig$||' | awk 'BEGIN{printf "["} {printf "%s\"%s\"", (NR>1?",":""), $0} END{printf "]"}')
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+
+      - id: REL-DRAFT
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --draft --generate-notes
+
+  rel-build:
+    needs: rel-list
+    runs-on: @@RELRUNNER@@
     timeout-minutes: @@RELTIMEOUT@@
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.rel-list.outputs.apps) }}
     env:
       ZIG_VERS: "@@ZIGVERS@@"
     steps:
@@ -71,27 +97,37 @@ jobs:
           echo "$HOME/zig" >> "$GITHUB_PATH"
 
       - id: EXEZ-REL
-        run: |
-          set -e
-          mkdir -p dist
-          for f in $(git ls-files '*build.zig'); do
-            d=$(dirname "$f"); app="${d//\//-}"
-            for t in @@RELTARGETS@@; do
-              (cd "$d" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
-              mkdir -p "dist/${app}-${t}"
-              find "$d/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${app}-${t}/" \;
-              [ -f LICENSE ] && cp LICENSE "dist/${app}-${t}/"
-              case "$t" in
-                *windows*) (cd dist && zip -qr "${app}-${t}.zip" "${app}-${t}") ;;
-                *) tar -czf "dist/${app}-${t}.tar.gz" -C dist "${app}-${t}" ;;
-              esac
-              rm -rf "dist/${app}-${t}"
-            done
-          done
-          ls -la dist
-
-      - id: REL-MAKE
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
+          APP: ${{ matrix.app }}
+        run: |
+          set -e
+          name="${APP//\//-}"
+          mkdir -p dist
+          for t in @@RELTARGETS@@; do
+            (cd "$APP" && rm -rf zig-out && zig build -Dtarget="$t" -Doptimize=ReleaseSafe)
+            mkdir -p "dist/${name}-${t}"
+            find "$APP/zig-out" -type f -path '*/bin/*' ! -name '*.pdb' -exec cp {} "dist/${name}-${t}/" \;
+            [ -f LICENSE ] && cp LICENSE "dist/${name}-${t}/"
+            case "$t" in
+              *windows*) (cd dist && zip -qr "${name}-${t}.zip" "${name}-${t}") ;;
+              *) tar -czf "dist/${name}-${t}.tar.gz" -C dist "${name}-${t}" ;;
+            esac
+            rm -rf "dist/${name}-${t}"
+          done
+          ls -la dist
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+
+  rel-done:
+    needs: rel-build
+    runs-on: @@RELRUNNER@@
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - id: REL-OPEN
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
 @@RELEASE_END@@

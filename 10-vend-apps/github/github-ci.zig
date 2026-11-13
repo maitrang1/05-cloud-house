@@ -119,11 +119,11 @@ fn tmplFill(a: std.mem.Allocator, tmpl: []const u8, cf: @import("config-load.zig
         "\n      - id: ZIGZ-CASH\n        uses: actions/cache@v6\n        with:\n          path: ~/.cache/zig\n          key: zig-${{ runner.os }}-${{ hashFiles('**/build.zig.zon') }}\n"
     else
         "";
-    const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@" };
+    const keys = [_][]const u8{ "@@TAGS@@", "@@PATHS@@", "@@KILL@@", "@@RUNNER@@", "@@TIMEOUT@@", "@@ZIGVERS@@", "@@ZIGBASE@@", "@@CACHE@@", "@@RELTIMEOUT@@", "@@RELTARGETS@@", "@@RELRUNNER@@" };
     const timeout = try std.fmt.allocPrint(a, "{d}", .{cf.job_tmos_mins});
     const reltmo = try std.fmt.allocPrint(a, "{d}", .{cf.rele_tmos_mins});
     const targets = try std.mem.join(a, " ", cf.rele_targets);
-    const vals = [_][]const u8{ tags, paths.items, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache, reltmo, targets };
+    const vals = [_][]const u8{ tags, paths.items, cf.kill_name, cf.runs_on, timeout, cf.zig_vers, cf.zig_base, cache, reltmo, targets, cf.rele_runs_on };
     var cur = try releaseBlock(a, tmpl, cf.rele);
     for (keys, vals) |k, v| cur = try std.mem.replaceOwned(u8, a, cur, k, v);
     return cur;
@@ -146,12 +146,16 @@ test "the release job is kept with its targets and timeout, or cut out whole; th
     defer arena.deinit();
     const a = arena.allocator();
     const raw = try std.Io.Dir.cwd().readFileAlloc(std.testing.io, "20-build.yml", a, .limited(64 * 1024));
-    const on = try tmplFill(a, raw, .{ .rele_targets = &.{ "x86_64-linux", "aarch64-macos" }, .rele_tmos_mins = 45 });
+    const on = try tmplFill(a, raw, .{ .rele_targets = &.{ "x86_64-linux", "aarch64-macos" }, .rele_tmos_mins = 45, .rele_runs_on = "runner-x" });
     try std.testing.expect(std.mem.indexOf(u8, on, "@@") == null);
     try std.testing.expect(std.mem.indexOf(u8, on, "gh release create") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "for t in x86_64-linux aarch64-macos; do") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "timeout-minutes: 45") != null);
     try std.testing.expect(std.mem.indexOf(u8, on, "cp LICENSE \"dist/") != null); // every download carries the license
+    // the release never runs on the 15-minute slim runner: its own runner name, one matrix job per app, a draft opened only at the end
+    try std.testing.expectEqual(@as(usize, 3), std.mem.count(u8, on, "runs-on: runner-x"));
+    try std.testing.expect(std.mem.indexOf(u8, on, "fromJSON(needs.rel-list.outputs.apps)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, on, "--draft=false") != null);
     const off = try tmplFill(a, raw, .{ .rele = false });
     try std.testing.expect(std.mem.indexOf(u8, off, "@@") == null);
     try std.testing.expect(std.mem.indexOf(u8, off, "release") == null);

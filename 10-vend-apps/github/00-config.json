@@ -154,6 +154,7 @@
     "tags": true,
     "cache": true,
     "rele": true,
+    "rele_runs_on": "ubuntu-latest",
     "rele_tmos_mins": 60,
     "rele_targets": ["x86_64-linux", "x86_64-windows"],
     "secr": [

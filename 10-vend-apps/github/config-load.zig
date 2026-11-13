@@ -127,6 +127,7 @@ pub const Ciiz = struct {
     tags: bool = true,
     cache: bool = true,
     rele: bool = true,
+    rele_runs_on: []const u8 = "ubuntu-latest",
     rele_tmos_mins: u32 = 60,
     rele_targets: []const []const u8 = &.{ "x86_64-linux", "x86_64-windows" },
     secr: []const Secr = &.{},
@@ -299,6 +300,7 @@ pub fn check(c: *const Conf, mock: bool) ConfErro!void {
     if (c.ciiz.job_tmos_mins < 1 or c.ciiz.job_tmos_mins > 360) return bad("ciiz.job_tmos_mins must be 1..360", .{});
     if (c.warn.acti_free_usd < 1 or c.warn.acti_rate_milli < 1) return bad("warn.acti_free_usd and acti_rate_milli must be 1 or more", .{});
     if (c.ciiz.rele_tmos_mins < 1 or c.ciiz.rele_tmos_mins > 360) return bad("ciiz.rele_tmos_mins must be 1..360", .{});
+    if (c.ciiz.rele_runs_on.len == 0) return bad("ciiz.rele_runs_on must name a runner", .{});
     if (c.ciiz.rele and c.ciiz.rele_targets.len == 0) return bad("ciiz.rele_targets must list a target", .{});
     for (c.ciiz.rele_targets) |t| for (t) |ch| if (!(std.ascii.isLower(ch) or std.ascii.isDigit(ch) or ch == '_' or ch == '-')) return bad("ciiz.rele_targets entries are plain target names like x86_64-linux", .{});
     for (c.ciiz.secr) |s| if (s.name.len == 0 or s.vaul.len == 0) return bad("ciiz.secr rows need name and vaul", .{});

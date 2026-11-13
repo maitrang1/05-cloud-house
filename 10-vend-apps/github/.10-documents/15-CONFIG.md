@@ -42,7 +42,7 @@ Every key has a default. An unknown key stops the app and names the line and col
 | `push.keep` | files in the copy the mirror never moves | `.gitignore`, `.gitattributes` | patterns |
 | `push.trash` | where removed files go | `{home}/00_modules/zzzz-delete-force-items/05-cloud-house-synch` | path |
 | `rule.*` | branch rule: block deletion, block force push | on | true, false |
-| `ciiz.*` | cloud build: file, runner, timeout, Zig version, release job and targets | see file | see file |
+| `ciiz.*` | cloud build: file, runner (`runs_on`, 15-minute limit on slim runners), timeout, Zig version, release job (`rele_runs_on`, `rele_tmos_mins`, `rele_targets`) | see file | see file |
 | `ghcr.onzz` | check for a container image | `false` | true, false |
 | `mirr` | extra git hosts to push to | none | rows |
 | `vaul.*` | passphrase variable and lock cost | `CLOUD_HOUSE_VAULT_PASS` · 3 · 65536 · 1 | name, numbers |
