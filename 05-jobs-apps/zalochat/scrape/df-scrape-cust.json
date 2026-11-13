@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "scrape-cust",
+  "description": "Per-customer file: <home>/cust/<id>/cust.json. 1 email = 1 cust.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cust_id"],
+  "properties": {
+    "cust_id": { "type": "string", "pattern": "^[a-z0-9_-]{1,64}$" },
+    "consent": { "type": "boolean", "description": "cust agreed to us storing third-party chat data" },
+    "consent_at": { "type": "integer" },
+    "retention_days": { "type": "integer", "minimum": 0, "description": "0 = use config legal.retention_days" },
+    "urls": { "type": "array", "items": { "type": "string" } },
+    "webhook_url": { "type": "string" },
+    "daily_cap": { "type": "integer", "minimum": 0, "description": "0 = use config public.daily_cap" },
+    "vendors_allowed": { "type": "boolean" },
+    "oa_enabled": { "type": "boolean" },
+    "personal_enabled": { "type": "boolean" }
+  },
+  "examples": [
+    { "cust_id": "demo", "consent": true, "consent_at": 1780000000000, "urls": ["https://zalo.me/example"], "webhook_url": "", "vendors_allowed": true }
+  ]
+}

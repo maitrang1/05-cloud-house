@@ -1,0 +1,150 @@
+{
+  "vers": 1,
+  "data": {
+    "root": "{home}/.05-cloud-house-secre",
+    "acct": "github-account.json",
+    "stat": "github-state.json",
+    "vaul": "github-main.vault",
+    "audi": "github-audit.jsonl",
+    "keys": "github-keys",
+    "host": "github-known_hosts"
+  },
+  "http": {
+    "apiz_base": "https://api.github.com",
+    "webz_base": "https://github.com",
+    "apiz_vers": "2022-11-28",
+    "user_agen": "cloud-house-github",
+    "tmos_secs": 30,
+    "retr_maxz": 3,
+    "wait_maxz_secs": 120,
+    "body_maxz_kbyt": 2048
+  },
+  "auth": {
+    "mode": "gh",
+    "clie_iden": "",
+    "scop": "repo workflow read:user user:email write:public_key",
+    "poll_maxz_secs": 900
+  },
+  "acct": {
+    "logi": "",
+    "mail": ""
+  },
+  "sign": {
+    "name_base": "",
+    "name_trys": 20,
+    "pass_size": 24,
+    "path_form": "/signup",
+    "path_devi": "/login/device",
+    "path_twof": "/settings/security",
+    "path_keys": "/settings/keys",
+    "path_apps": "/settings/applications"
+  },
+  "guid": {
+    "poll_secs": 5,
+    "tmos_secs": 600
+  },
+  "osiz": {
+    "brow_open": true,
+    "clip_copy": true,
+    "clip_clea_secs": 60,
+    "clip_osc5": true,
+    "clip_tool": [],
+    "brow_tool": []
+  },
+  "vaul": {
+    "pass_envz": "CLOUD_HOUSE_VAULT_PASS",
+    "argo_time": 3,
+    "argo_memo_kbyt": 65536,
+    "argo_para": 1
+  },
+  "repo": {
+    "root": "",
+    "nest_okay": false,
+    "name": "05-cloud-house",
+    "visi": "public",
+    "bran": "main",
+    "desc": "cloud-house: Zig 0.16 std-only apps and vendor adapters",
+    "wiki": false,
+    "proj": false,
+    "merg_dele": true,
+    "comm_text": "first commit"
+  },
+  "gitz": {
+    "scop": "local",
+    "prot": "ssh",
+    "crlf": "input",
+    "tmos_secs": 300
+  },
+  "sshz": {
+    "keyz_name": "id_ed25519",
+    "titl": "cloud-house",
+    "host_test": true,
+    "host_user": "git@github.com",
+    "host_tmos_secs": 20
+  },
+  "file": {
+    "igno": [".env", "*.key", "*.pem", "*.db", "*.sqlite", ".secrets/", "zig-out/", ".zig-cache/", "node_modules/", ".10-docs/", "zzzz-delete-force-items/", ".claude/", "*.log", "*.part", "*.lock", "*.pdb", "*.exe"],
+    "attr": ["* text=auto eol=lf"]
+  },
+  "scan": {
+    "name": [".env", ".env.*", "*.key", "*.pem", "*.p12", "*.pfx", "*.kdbx", "*.jks", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "*.vault"],
+    "mark": [
+      { "pref": "PRIVATE KEY-----", "tail": 0 },
+      { "pref": "ghp_", "tail": 30 },
+      { "pref": "gho_", "tail": 30 },
+      { "pref": "ghs_", "tail": 30 },
+      { "pref": "ghu_", "tail": 30 },
+      { "pref": "github_pat_", "tail": 30 },
+      { "pref": "AKIA", "tail": 16 },
+      { "pref": "xoxb-", "tail": 20 },
+      { "pref": "sk_live_", "tail": 20 }
+    ],
+    "skip": [],
+    "size_maxz_kbyt": 512,
+    "file_maxz_mbyt": 100
+  },
+  "push": {
+    "skip_dirs": [".git", ".github", "zig-out", ".zig-cache", "node_modules", ".10-docs", ".05-docs-core", ".15-docs-flow", "zzzz-delete-force-items", ".claude", ".secrets", "test-data"],
+    "allo": ["*.zig", "*.zon", "*00-config.json", "*df-*.json", "*10-steps.json", "*.yml", "*.mjs", "*/package.json", "*/package-lock.json", "*.10-documents/*", "*read-only.json"],
+    "deny": ["*.vault", "*.key", "*.pem", "*.env", "*.env.*", "*id_ed25519*", "*id_rsa*"],
+    "keep": [".gitignore", ".gitattributes"],
+    "trash": "/home/mai_trang/00_modules/zzzz-delete-force-items/05-cloud-house-synch",
+    "file_maxz_kbyt": 1024
+  },
+  "rule": {
+    "onzz": true,
+    "name": "main-guard",
+    "pull_need": false,
+    "forc_bloc": true,
+    "dele_bloc": true
+  },
+  "ciiz": {
+    "onzz": true,
+    "file_path": ".github/workflows/build.yml",
+    "tmpl_file": "20-build.yml",
+    "comm_text": "ci: add build workflow",
+    "kill_name": "CI_KILL",
+    "runz_tmos_secs": 900,
+    "runs_on": "ubuntu-slim",
+    "job_tmos_mins": 15,
+    "zig_vers": "0.16.0",
+    "zig_base": "https://ziglang.org/download",
+    "paths": [],
+    "tags": true,
+    "cache": true,
+    "secr": [
+      { "name": "HEALTHCHECKS_URL", "vaul": "ci.healthchecks_url", "need": false }
+    ]
+  },
+  "ghcr": {
+    "onzz": false
+  },
+  "mirr": [],
+  "warn": {
+    "repo_maxz_mbyt": 1024,
+    "pack_maxz_mbyt": 500,
+    "acti_free_usd": 12,
+    "acti_rate_milli": 2,
+    "perc": 80
+  }
+}

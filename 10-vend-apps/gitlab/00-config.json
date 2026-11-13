@@ -1,0 +1,44 @@
+{
+  "vers": 1,
+  "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "gitlab-vault.json", "stat": "gitlab-state.json", "audi": "gitlab-audit.log", "step": "steps.json", "acct": "gitlab-account.json" },
+  "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1 },
+  "repo": { "path": "/home/mai_trang/05-cloud-house-synch", "bran": "main", "remo": "origin" },
+  "gitl": {
+    "host": "gitlab.com",
+    "webz": "https://gitlab.com",
+    "apiz": "https://gitlab.com/api/v4",
+    "oaut": "https://gitlab.com/oauth",
+    "user": "",
+    "proj": "cloud-house",
+    "visi": "public",
+    "push": "git@{host}:{user}/{proj}.git",
+    "sign": "{webz}/users/sign_up",
+    "sett": { "shared_runners_enabled": false, "builds_access_level": "disabled", "container_registry_access_level": "disabled", "wiki_access_level": "disabled", "packages_enabled": false, "lfs_enabled": false, "snippets_access_level": "disabled", "pages_access_level": "disabled", "issues_access_level": "disabled", "merge_requests_access_level": "disabled", "analytics_access_level": "disabled", "monitor_access_level": "disabled", "infrastructure_access_level": "disabled", "releases_access_level": "disabled", "environments_access_level": "disabled", "feature_flags_access_level": "disabled", "model_experiments_access_level": "disabled", "model_registry_access_level": "disabled", "security_and_compliance_access_level": "disabled", "requirements_access_level": "disabled", "forking_access_level": "disabled", "request_access_enabled": false, "auto_devops_enabled": false, "only_allow_merge_if_pipeline_succeeds": false }
+  },
+  "gith": {
+    "apiz": "https://api.github.com",
+    "vers": "2022-11-28",
+    "secr": "GITLAB_MIRROR_TOKEN",
+    "ping": "HC_PING_URL",
+    "varz": "MIRROR_ON",
+    "flow": ".github/workflows/mirror.yml",
+    "tmpl": "mirror-template.yml",
+    "mess": "ci: add gitlab mirror job",
+    "wait": 180
+  },
+  "oaut": { "clid": "", "scop": "api" },
+  "logi": { "orde": ["vault", "devi", "glab"] },
+  "tool": { "gitz": "git", "sshk": "ssh-keygen", "sshz": "ssh", "glab": "glab", "ghcl": "gh", "time": 120 },
+  "glab": {
+    "stat": ["auth", "status", "--hostname", "{host}"],
+    "logi": ["auth", "login", "--hostname", "{host}", "--device"],
+    "toke": ["auth", "token", "--hostname", "{host}"]
+  },
+  "ghcl": { "toke": ["auth", "token"] },
+  "sshz": { "file": "{home}/.ssh/id_ed25519_gitlab", "conf": "{home}/.ssh/config", "titl": "cloud-house", "user": "git", "veri": true },
+  "prot": { "push": 30, "merg": 40, "forc": false },
+  "toke": { "name": "mirror", "scop": ["write_repository"], "role": 30, "days": 90, "rota": 14 },
+  "guid": { "open": true, "clip": true, "poll": 5, "wait": 900 },
+  "http": { "trys": 4, "back": 2, "maxw": 60, "agen": "cloud-house-gitlab/1", "maxb": 4194304 },
+  "limi": { "stor": 10737418240, "apiz": 5000, "warn": 80, "cimn": 400, "mirx": 10, "usrx": 5 }
+}

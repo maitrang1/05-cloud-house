@@ -1,0 +1,7 @@
+.{
+    .name = .zalochat_scrape,
+    .fingerprint = 0x1da42a639ba7e421,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

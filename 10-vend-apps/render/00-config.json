@@ -1,0 +1,28 @@
+{
+  "vers": 1,
+  "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "render-vault.json", "stat": "render-state.json", "audi": "render-audit.log", "wire": "trigger-c.json" },
+  "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1, "keyz": "render.apikey" },
+  "rend": {
+    "apiz": "https://api.render.com/v1",
+    "sign": "https://dashboard.render.com/register",
+    "keyp": "https://dashboard.render.com/u/settings#api-keys",
+    "keyf": "rnd_",
+    "owne": "",
+    "name": "cloud-house-trigger",
+    "kind": "web_service",
+    "imag": "",
+    "plan": "free",
+    "regi": "oregon",
+    "heal": "/healthz",
+    "inst": 1
+  },
+  "envs": [
+    { "name": "HEALTHCHECKS_URL", "vaul": "env.HEALTHCHECKS_URL", "need": false }
+  ],
+  "guar": { "paid": false, "capz": 0 },
+  "wire": { "slot": "C", "laye": "trigger" },
+  "cold": { "wait": 600, "poll": 5, "wind": 60 },
+  "guid": { "open": true, "clip": true, "poll": 5, "wait": 900 },
+  "http": { "trys": 4, "back": 2, "maxw": 60, "agen": "cloud-house-render/1", "maxb": 4194304 },
+  "limi": { "hour": 750, "warn": 80, "day": 31 }
+}

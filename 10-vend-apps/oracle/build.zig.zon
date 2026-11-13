@@ -1,0 +1,7 @@
+.{
+    .name = .cloud_house_oracle,
+    .version = "0.1.0",
+    .fingerprint = 0x8bd12dca00a1d730,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

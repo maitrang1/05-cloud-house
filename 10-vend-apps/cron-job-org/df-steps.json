@@ -1,0 +1,13 @@
+{
+  "vers": 1,
+  "vend": "cjob",
+  "step": [
+    { "numb": 0, "iden": "pref-chec", "kind": "auto", "acts": "pref.chec", "hand": 0, "redo": true, "name": "Preflight: OS, data folder, vault", "need": "a vault passphrase (8+ chars)", "done": "vault opens" },
+    { "numb": 1, "iden": "acco-sign", "kind": "guide", "acts": "acco.sign", "hand": 1, "redo": false, "name": "Sign up and confirm the email (hand job 1)", "need": "sign up, click the link in the email, then type g", "done": "you typed g, or an API key is already vaulted" },
+    { "numb": 2, "iden": "keyz-make", "kind": "guide", "acts": "keyz.make", "hand": 2, "redo": false, "name": "Create the API key, hand it over hidden (hand job 2)", "need": "Console > Settings > API: enable, create key, copy it", "done": "the key works and sits in the vault" },
+    { "numb": 3, "iden": "tick-reso", "kind": "auto", "acts": "tick.reso", "hand": 0, "redo": true, "name": "Find the tick URL, make the tick secret", "need": "nothing", "done": "tick URL known, secret in the vault" },
+    { "numb": 4, "iden": "job-sync", "kind": "auto", "acts": "job.sync", "hand": 0, "redo": true, "name": "Tick job: create or fix, with failure alerts", "need": "nothing", "done": "job exists and matches the settings" },
+    { "numb": 5, "iden": "job-veri", "kind": "auto", "acts": "job.veri", "hand": 0, "redo": true, "name": "Verify from the job history", "need": "nothing", "done": "a tick was seen, or the next one is due" },
+    { "numb": 6, "iden": "fina-chec", "kind": "auto", "acts": "fina.chec", "hand": 0, "redo": true, "name": "Final check, handoff file, quota", "need": "nothing", "done": "report printed" }
+  ]
+}

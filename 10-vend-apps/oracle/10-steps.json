@@ -1,0 +1,18 @@
+{
+  "vers": 1,
+  "vend": "orac",
+  "step": [
+    { "numb": 0, "iden": "pref-chec", "kind": "auto", "hand": 0, "name": "Preflight: tools, config, clock", "need": "one go (consent)", "done": "openssl found; config valid" },
+    { "numb": 1, "iden": "sign-card", "kind": "guide", "hand": 1, "name": "Sign up with a card (hand job 1)", "need": "fill the sign-up form", "done": "you type g" },
+    { "numb": 2, "iden": "sign-regi", "kind": "guide", "hand": 2, "name": "Choose a home region (hand job 2)", "need": "pick a region, then type its id", "done": "region id saved" },
+    { "numb": 3, "iden": "keyz-make", "kind": "auto", "hand": 0, "name": "Make the API signing key", "need": "vault passphrase", "done": "key in the vault; fingerprint known" },
+    { "numb": 4, "iden": "cons-keyz", "kind": "guide", "hand": 3, "name": "Console login, MFA, paste the public key (hand job 3)", "need": "log in, add the key, paste the preview block", "done": "signed call to your user is 200" },
+    { "numb": 5, "iden": "comp-make", "kind": "auto", "hand": 0, "name": "Compartment", "need": "nothing", "done": "compartment ACTIVE" },
+    { "numb": 6, "iden": "netw-make", "kind": "auto", "hand": 0, "name": "VCN, gateway, route, firewall, subnet", "need": "nothing", "done": "5 ids saved and re-read" },
+    { "numb": 7, "iden": "inst-make", "kind": "auto", "hand": 0, "name": "Free VM with cloud-init", "need": "nothing", "done": "VM RUNNING; public IP known" },
+    { "numb": 8, "iden": "keep-aliv", "kind": "auto", "hand": 0, "name": "Heartbeat (only if keep.on)", "need": "nothing", "done": "rendered in cloud-init or skipped" },
+    { "numb": 9, "iden": "ingr-lock", "kind": "auto", "hand": 0, "name": "Firewall matches config, nothing else open", "need": "nothing", "done": "rules equal config" },
+    { "numb": 10, "iden": "back-conf", "kind": "auto", "hand": 0, "name": "Backup ids and config (no secrets)", "need": "nothing", "done": "backup file written" },
+    { "numb": 11, "iden": "repo-fina", "kind": "auto", "hand": 0, "name": "Final check and report", "need": "nothing", "done": "report printed" }
+  ]
+}

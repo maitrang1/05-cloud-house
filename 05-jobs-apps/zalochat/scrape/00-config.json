@@ -1,0 +1,80 @@
+{
+  "home": "",
+  "public": {
+    "user_agent": "zalochat-scrape/0.1 (respects robots.txt)",
+    "allow_hosts": ["zalo.me", "www.zalo.me", "chat.zalo.me", "zaloapp.com"],
+    "gap_ms": 3000,
+    "jitter_ms": 1500,
+    "timeout_s": 20,
+    "body_cap_kb": 1024,
+    "daily_cap": 200,
+    "robots_ttl_s": 3600,
+    "robots_cap_kb": 128,
+    "stop_on_block": true,
+    "retry_5xx": 1,
+    "text_cap": 4000,
+    "field_cap": 500
+  },
+  "vendor": {
+    "file": "df-scrape-vendors.json",
+    "stop_pct": 80,
+    "breaker_fails": 3,
+    "breaker_cool_s": 300,
+    "order": ["scrapingant", "zenrows", "scrape-do", "scraperapi", "firecrawl"]
+  },
+  "deliv": {
+    "retries": 3,
+    "backoff_ms": 500,
+    "secret_env": "SCRAPE_HOOK_SECRET",
+    "sig_header": "x-scrape-signature",
+    "pull_page": 100
+  },
+  "secrets": { "master_env": "SCRAPE_MASTER_KEY" },
+  "oa": {
+    "api_base": "https://openapi.zalo.me",
+    "oauth_base": "https://oauth.zaloapp.com",
+    "app_id_env": "ZALO_APP_ID",
+    "app_secret_env": "ZALO_APP_SECRET",
+    "refresh_margin_s": 3600,
+    "page_users": 50,
+    "page_msgs": 10,
+    "max_followers": 10000,
+    "call_gap_ms": 500,
+    "redirect_uri": "",
+    "max_messages": 2000,
+    "max_articles": 500,
+    "paths": {
+      "authorize": "/v4/oa/permission",
+      "token": "/v4/oa/access_token",
+      "info": "/v2.0/oa/getoa",
+      "followers": "/v2.0/oa/getfollowers",
+      "profile": "/v2.0/oa/getprofile",
+      "recent": "/v2.0/oa/listrecentchat",
+      "conversation": "/v2.0/oa/conversation",
+      "quota": "/v2.0/oa/quota/message",
+      "articles": "/v2.0/article/getslice",
+      "article_detail": "/v2.0/article/getdetail"
+    }
+  },
+  "legal": { "retention_days": 90, "consent_required": true },
+  "side": {
+    "enabled": false,
+    "node": "node",
+    "dir": "side",
+    "lease_ttl_s": 120,
+    "daily_cap": 300,
+    "whitelist": ["fetchAccountInfo", "getAllFriends", "getAllGroups", "getGroupInfo", "getGroupChatHistory"],
+    "gap_ms": 1500,
+    "call_timeout_ms": 60000,
+    "history_count": 50,
+    "risk_days": 7,
+    "max_groups": 100
+  },
+  "sche": {
+    "kill_switch": false,
+    "max_fails": 3,
+    "spike_pct": 300
+  },
+  "watch": { "ping_env": "SCRAPE_PING_URL", "spike_min": 20 },
+  "chan": { "proof_pages": 20, "pass_pct": 95 }
+}

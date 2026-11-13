@@ -1,0 +1,13 @@
+{
+  "vers": 1,
+  "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "cronjoborg-vault.json", "stat": "cronjoborg-state.json", "audi": "cronjoborg-audit.log", "hand": "cronjoborg-handoff.json", "step": "df-steps.json" },
+  "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1, "keya": "cronjoborg.apikey", "keyt": "cronjoborg.tick", "prom": "vault passphrase: " },
+  "cron": { "base": "https://api.cron-job.org", "keyz_envz": "CRONJOBORG_KEY", "prom": "cron-job.org API key (hidden): " },
+  "tick": { "urlz": "", "from": "ggc-run-handoff.json", "fiel": "tick_url", "head": "X-Tick-Secret", "seca": 32 },
+  "jobz": { "titl": "cloud-house-tick", "enab": true, "meth": 1, "tmoz": 25, "save": false, "redi": false, "tzon": "UTC", "mins": [-1], "hour": [-1], "mday": [-1], "mont": [-1], "wday": [-1], "body": "{\"src\":\"cron-job-org\"}", "ctyp": "application/json" },
+  "noti": { "fail": true, "fcnt": 1, "succ": true, "disa": true, "mode": 1 },
+  "veri": { "tries": 3, "gap": 35, "okay": [200, 202] },
+  "guid": { "open": true, "poll": 5, "wait": 900, "sign": "https://cron-job.org/en/signup/", "keyp": "https://console.cron-job.org/settings" },
+  "http": { "trys": 3, "back": 2, "maxw": 60, "agen": "cloud-house-cronjoborg/1", "maxb": 1048576 },
+  "limi": { "dayl": 100, "warn": 80, "tmax": 30, "tryz": 5 }
+}

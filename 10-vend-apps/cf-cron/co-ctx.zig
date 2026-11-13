@@ -1,0 +1,45 @@
+// =====================================================================
+// Des: The shared run context every step reads, plus the helper that turns a step function into an engine row.
+// Flo: build ctx once > each step gets a pointer > wrap into a Row
+// Cre: 2026-11-13                          - | Mod: 2026-11-13
+// Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
+// Inp: config, vault, state, Cloudflare client, input queue
+// Out: Ctx struct and row()
+// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron && zig build test
+// Exe: none (library file)
+// =====================================================================
+const std = @import("std");
+const cfg = @import("co-cfg.zig");
+const vaul = @import("pv-vault.zig");
+const stat = @import("co-state.zig");
+const inpu = @import("co-input.zig");
+const engi = @import("co-engine.zig");
+const cfla = @import("ap-cflare.zig");
+
+// everything a step may touch
+pub const Ctx = struct {
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    conf: *const cfg.Conf,
+    vaul: *vaul.Vaul,
+    stat: *stat.Stat,
+    cfla: *cfla.Cfla,
+    inpu: *inpu.Inpu,
+    root: []const u8,
+};
+
+pub const Act = *const fn (*Ctx, std.mem.Allocator) anyerror!engi.Done;
+
+// wrap one step function as an engine row
+pub fn row(ctx: *Ctx, comptime iden: []const u8, comptime name: []const u8, comptime hand: bool, comptime act: fn (*Ctx, std.mem.Allocator) anyerror!engi.Done) engi.Row {
+    const Wrap = struct {
+        fn runz(raw: *anyopaque, gpa: std.mem.Allocator) anyerror!engi.Done {
+            const self: *Ctx = @ptrCast(@alignCast(raw));
+            return act(self, gpa);
+        }
+    };
+    return .{ .iden = iden, .name = name, .hand = hand, .runz = Wrap.runz, .ctx = ctx };
+}
+
+// ========================___THIS_IS_THE_END___========================
+// ===============___HOLD_YOUR_BREATH_AND_COUNT_TO_TEN___===============

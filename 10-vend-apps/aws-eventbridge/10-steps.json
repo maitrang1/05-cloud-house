@@ -1,0 +1,20 @@
+{
+  "vers": 1,
+  "vend": "aws-eventbridge",
+  "step": [
+    { "numb": 0, "iden": "pref-chec", "kind": "auto", "hand": 0, "name": "Check config and tick rate", "need": "none", "done": "config ok, ticks per month known" },
+    { "numb": 1, "iden": "sign-card", "kind": "guide", "hand": 1, "name": "Sign up with card + phone, choose the Paid plan", "need": "email, card, phone", "done": "user types g" },
+    { "numb": 2, "iden": "cons-mfa", "kind": "guide", "hand": 2, "name": "Console login with MFA, give the region", "need": "account", "done": "user types g, region valid" },
+    { "numb": 3, "iden": "keyz-boot", "kind": "guide", "hand": 3, "name": "Make one access key, paste it hidden", "need": "console login", "done": "signed GetCallerIdentity is 200" },
+    { "numb": 4, "iden": "budg-make", "kind": "auto", "hand": 0, "name": "Budget alert first", "need": "bootstrap key", "done": "DescribeBudget returns it" },
+    { "numb": 5, "iden": "iamu-make", "kind": "auto", "hand": 0, "name": "Scoped IAM user + key, vaulted", "need": "bootstrap key", "done": "scoped key works, bootstrap dropped" },
+    { "numb": 6, "iden": "role-make", "kind": "auto", "hand": 0, "name": "Roles for Scheduler and the rule", "need": "scoped key", "done": "both roles read back" },
+    { "numb": 7, "iden": "conn-make", "kind": "auto", "hand": 0, "name": "API-key connection", "need": "scoped key", "done": "AUTHORIZED" },
+    { "numb": 8, "iden": "dest-make", "kind": "auto", "hand": 0, "name": "API destination to the tick URL", "need": "tick.urlz", "done": "ACTIVE" },
+    { "numb": 9, "iden": "rule-make", "kind": "auto", "hand": 0, "name": "Rule from the bus to the destination", "need": "destination", "done": "ENABLED with target" },
+    { "numb": 10, "iden": "sche-make", "kind": "auto", "hand": 0, "name": "Schedule group + schedule", "need": "roles, rule", "done": "schedule ENABLED" },
+    { "numb": 11, "iden": "tick-chec", "kind": "auto", "hand": 0, "name": "Re-read every piece, compare with config", "need": "all above", "done": "all pieces equal config" },
+    { "numb": 12, "iden": "back-conf", "kind": "auto", "hand": 0, "name": "Backup of config and ids", "need": "none", "done": "file written" },
+    { "numb": 13, "iden": "repo-fina", "kind": "auto", "hand": 0, "name": "Final report", "need": "all above", "done": "printed" }
+  ]
+}

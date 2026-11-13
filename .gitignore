@@ -1,0 +1,17 @@
+.env
+*.key
+*.pem
+*.db
+*.sqlite
+.secrets/
+zig-out/
+.zig-cache/
+node_modules/
+.10-docs/
+zzzz-delete-force-items/
+.claude/
+*.log
+*.part
+*.lock
+*.pdb
+*.exe

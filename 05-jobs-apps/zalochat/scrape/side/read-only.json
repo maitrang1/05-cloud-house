@@ -1,0 +1,4 @@
+{
+  "note": "The ONLY methods the sidecar will ever call. All are reads. No send, no friend request, no group change, no phone/stranger lookup. A name not listed here is refused even if the Zig config allows it.",
+  "read": ["fetchAccountInfo", "getOwnId", "getAllFriends", "getAllGroups", "getGroupInfo", "getGroupMembersInfo", "getGroupChatHistory", "getUserInfo"]
+}

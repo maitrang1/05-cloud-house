@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "scrape-cust",
+  "description": "Per-customer file: <home>/cust/<id>/cust.json. 1 email = 1 cust.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cust_id"],
+  "properties": {
+    "cust_id": { "type": "string", "pattern": "^[a-z0-9_-]{1,64}$" },
+    "consent": { "type": "boolean", "description": "cust agreed to us storing third-party message and comment data" },
+    "consent_at": { "type": "integer" },
+    "retention_days": { "type": "integer", "minimum": 0, "description": "0 = use config legal.retention_days" },
+    "targets": { "type": "array", "items": { "type": "object", "required": ["kind", "url"], "properties": { "kind": { "enum": ["page", "post", "cmnt", "item", "adlib"] }, "url": { "type": "string" } } } },
+    "pages": { "type": "array", "items": { "type": "string" }, "description": "own lane: connected Page ids" },
+    "webhook_url": { "type": "string" },
+    "daily_cap": { "type": "integer", "minimum": 0, "description": "0 = use config market.daily_cap" },
+    "vendors_allowed": { "type": "boolean" },
+    "own_enabled": { "type": "boolean" }
+  },
+  "examples": [
+    { "cust_id": "demo", "consent": true, "consent_at": 1780000000000, "targets": [{ "kind": "page", "url": "https://www.facebook.com/example" }], "webhook_url": "", "vendors_allowed": true }
+  ]
+}

@@ -1,0 +1,7 @@
+.{
+    .name = .facebook_scrape,
+    .fingerprint = 0x9f7f1d30ff38c5c6,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

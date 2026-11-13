@@ -1,0 +1,7 @@
+.{
+    .name = .cloud_house_forgejo,
+    .version = "0.1.0",
+    .fingerprint = 0x7e8e6014b46c564e,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

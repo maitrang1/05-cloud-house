@@ -1,0 +1,10 @@
+{
+  "note": "Vendors are data, not code. Endpoints/headers are secondhand (2026-11-12) and unverified until `probe` runs with a real key. budget = free credits per month.",
+  "vendors": [
+    { "id": "scrapingant", "name": "ScrapingAnt", "base": "https://api.scrapingant.com/v2/general", "method": "GET", "auth": "header", "auth_name": "x-api-key", "key_env": "SCRAPINGANT_KEY", "url_param": "url", "extra": "browser=false", "credit_header": "ant-credits-cost", "cost_default": 1, "budget": 10000, "on": true, "verified": false },
+    { "id": "zenrows", "name": "ZenRows", "base": "https://api.zenrows.com/v1/", "method": "GET", "auth": "query", "auth_name": "apikey", "key_env": "ZENROWS_KEY", "url_param": "url", "extra": "", "credit_header": "x-request-cost", "cost_default": 1, "budget": 1000, "on": true, "verified": false },
+    { "id": "scrape-do", "name": "Scrape.do", "base": "https://api.scrape.do/", "method": "GET", "auth": "query", "auth_name": "token", "key_env": "SCRAPEDO_KEY", "url_param": "url", "extra": "", "credit_header": "scrape.do-request-cost", "cost_default": 1, "budget": 1000, "on": true, "verified": false },
+    { "id": "scraperapi", "name": "ScraperAPI", "base": "https://api.scraperapi.com/", "method": "GET", "auth": "query", "auth_name": "api_key", "key_env": "SCRAPERAPI_KEY", "url_param": "url", "extra": "", "credit_header": "sa-credit-cost", "cost_default": 1, "budget": 1000, "on": true, "verified": false },
+    { "id": "firecrawl", "name": "Firecrawl", "base": "https://api.firecrawl.dev/v1/scrape", "method": "POST", "auth": "bearer", "auth_name": "", "key_env": "FIRECRAWL_KEY", "url_param": "url", "extra": "", "reply": "json:data.html", "credit_header": "", "cost_default": 1, "budget": 1000, "on": true, "verified": false }
+  ]
+}

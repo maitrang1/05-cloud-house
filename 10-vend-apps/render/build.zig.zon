@@ -1,0 +1,7 @@
+.{
+    .name = .cloud_house_render,
+    .version = "0.1.0",
+    .fingerprint = 0xe9644f40efb4457c,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

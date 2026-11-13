@@ -1,0 +1,7 @@
+.{
+    .name = .cloud_house_cf_cron,
+    .fingerprint = 0xae9313bf57ffe045,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}

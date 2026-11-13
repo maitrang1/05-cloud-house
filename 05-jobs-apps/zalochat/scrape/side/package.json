@@ -1,0 +1,8 @@
+{
+  "name": "zalochat-scrape-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only Zalo personal-account reader. Vendored; run by Node; never installed at runtime.",
+  "dependencies": { "zca-js": "2.2.0" }
+}

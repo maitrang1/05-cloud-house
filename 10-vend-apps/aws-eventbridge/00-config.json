@@ -1,0 +1,53 @@
+{
+  "vers": 1,
+  "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "awseb-vault.json", "stat": "awseb-state.json", "audi": "awseb-audit.log", "back": "awseb-backup" },
+  "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1 },
+  "http": { "trys": 3, "back": 2, "maxw": 30, "agen": "aws-eventbridge-setup/0.1", "maxb": 4194304 },
+  "cred": { "regi": "us-east-1", "mail": "" },
+  "apis": {
+    "sts": "https://sts.{regi}.amazonaws.com",
+    "iam": "https://iam.amazonaws.com",
+    "iamr": "us-east-1",
+    "budg": "https://budgets.amazonaws.com",
+    "budr": "us-east-1",
+    "even": "https://events.{regi}.amazonaws.com",
+    "sche": "https://scheduler.{regi}.amazonaws.com"
+  },
+  "urls": {
+    "sign": "https://portal.aws.amazon.com/billing/signup",
+    "cons": "https://console.aws.amazon.com/",
+    "keys": "https://console.aws.amazon.com/iam/home#/security_credentials",
+    "plan": "https://console.aws.amazon.com/billing/home#/account"
+  },
+  "name": {
+    "user": "cloud-house-sched",
+    "grup": "cloud-house",
+    "sche": "cloud-house-tick",
+    "conn": "cloud-house-conn",
+    "dest": "cloud-house-dest",
+    "rule": "cloud-house-tick-rule",
+    "rols": "cloud-house-sched-role",
+    "rolr": "cloud-house-rule-role",
+    "budg": "cloud-house-budget",
+    "poli": "cloud-house-sched-policy"
+  },
+  "tick": {
+    "urlz": "",
+    "meth": "POST",
+    "keyn": "x-tick-key",
+    "rate": "rate(1 minute)",
+    "rlim": 5,
+    "srcz": "cloud-house.tick",
+    "dtyp": "tick",
+    "busn": "default",
+    "body": "{\"tick\":true}",
+    "ages": 3600,
+    "retr": 3,
+    "on": true
+  },
+  "budg": { "limi": "1.0", "unit": "USD", "warn": 80 },
+  "quot": { "warn": 80, "free": 14000000, "evtp": 1.0, "apip": 0.2, "days": 30 },
+  "wait": { "poll": 5, "time": 120 },
+  "guid": { "open": true, "clip": true, "poll": 5, "wait": 900 },
+  "paid": { "okay": false, "cap": 0 }
+}

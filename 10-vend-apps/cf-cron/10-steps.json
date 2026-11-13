@@ -1,0 +1,17 @@
+{
+  "vers": 1,
+  "vend": "cfla",
+  "step": [
+    { "numb": 0, "iden": "tool-chec", "kind": "auto", "hand": 0, "name": "Preflight and dry-run", "need": "one go (consent)", "done": "config ok, vault opens" },
+    { "numb": 1, "iden": "sign-form", "kind": "guide", "hand": 1, "name": "Sign up and verify email (hand job 1)", "need": "sign up, click the email link, type g", "done": "you typed g" },
+    { "numb": 2, "iden": "toke-ask", "kind": "ask", "hand": 2, "name": "Create and paste one API token (hand job 2)", "need": "My Profile > API Tokens > Create, paste it", "done": "GET /accounts is 200" },
+    { "numb": 3, "iden": "acco-find", "kind": "auto", "hand": 0, "name": "Find the account id", "need": "nothing", "done": "account id in state" },
+    { "numb": 4, "iden": "subd-make", "kind": "auto", "hand": 0, "name": "Make sure the workers.dev name exists", "need": "nothing", "done": "subdomain in state" },
+    { "numb": 5, "iden": "work-push", "kind": "auto", "hand": 0, "name": "Upload the tick Worker", "need": "nothing", "done": "hash saved" },
+    { "numb": 6, "iden": "work-rout", "kind": "auto", "hand": 0, "name": "Turn on the workers.dev address", "need": "nothing", "done": "route enabled" },
+    { "numb": 7, "iden": "cron-set", "kind": "auto", "hand": 0, "name": "Set the cron trigger", "need": "nothing", "done": "schedule equals config" },
+    { "numb": 8, "iden": "wire-sche", "kind": "auto", "hand": 0, "name": "Write the url as Schedule C", "need": "nothing", "done": "wiring file written" },
+    { "numb": 9, "iden": "tick-test", "kind": "auto", "hand": 0, "name": "Check the Worker answers", "need": "nothing", "done": "route answers 200" },
+    { "numb": 10, "iden": "cfcr-fina", "kind": "auto", "hand": 0, "name": "Final check and report", "need": "nothing", "done": "report printed" }
+  ]
+}

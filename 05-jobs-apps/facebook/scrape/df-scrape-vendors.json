@@ -1,0 +1,51 @@
+{
+  "note": "Vendor registry (data, not code). Logged-out public data only: never send a cookie or session to a vendor. Paths and shapes marked verified:false are from vendor docs and still need the live smoke (15-FEAT step live). Keys come from env vars named in key_env; never stored here.",
+  "vendors": [
+    {
+      "id": "scrapecreators",
+      "name": "ScrapeCreators",
+      "base": "https://api.scrapecreators.com/v1/facebook/profile",
+      "method": "GET",
+      "auth": "header",
+      "auth_name": "x-api-key",
+      "key_env": "SCRAPECREATORS_KEY",
+      "url_param": "url",
+      "reply": "raw",
+      "cost_default": 1,
+      "budget": 100,
+      "on": true,
+      "verified": false,
+      "kinds": { "page": "https://api.scrapecreators.com/v1/facebook/profile", "post": "https://api.scrapecreators.com/v1/facebook/profile/posts", "cmnt": "https://api.scrapecreators.com/v1/facebook/post/comments", "adlib": "https://api.scrapecreators.com/v1/facebook/adLibrary/company/ads" }
+    },
+    {
+      "id": "apify",
+      "name": "Apify (actor run-sync)",
+      "base": "https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/run-sync-get-dataset-items",
+      "method": "POST",
+      "auth": "bearer",
+      "key_env": "APIFY_TOKEN",
+      "url_param": "startUrl",
+      "reply": "raw",
+      "cost_default": 1,
+      "budget": 800,
+      "on": true,
+      "verified": false,
+      "kinds": { "item": "https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/run-sync-get-dataset-items", "page": "https://api.apify.com/v2/acts/apify~facebook-pages-scraper/run-sync-get-dataset-items", "post": "https://api.apify.com/v2/acts/apify~facebook-posts-scraper/run-sync-get-dataset-items" }
+    },
+    {
+      "id": "brightdata",
+      "name": "Bright Data (Web Unlocker)",
+      "base": "https://api.brightdata.com/request",
+      "method": "POST",
+      "auth": "bearer",
+      "key_env": "BRIGHTDATA_KEY",
+      "url_param": "url",
+      "extra": "\"format\":\"raw\"",
+      "reply": "raw",
+      "cost_default": 1,
+      "budget": 100,
+      "on": false,
+      "verified": false
+    }
+  ]
+}

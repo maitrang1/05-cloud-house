@@ -1,0 +1,10 @@
+{
+  "note": "Catalog rows for the automation hub. The hub fires them; this app has no scheduler and wires nothing itself. All start OFF. One entry per cust (replace <ID>).",
+  "jobs": [
+    { "id": "facebook-scan", "cmd": "scrape scan --cust <ID>", "trigger": "cron", "cron": "17 */6 * * *", "on": false, "tmoS": 900, "retry": 0 },
+    { "id": "facebook-sync", "cmd": "scrape sync --cust <ID> --only inbox,wall,lead,lives", "trigger": "cron", "cron": "7 * * * *", "on": false, "tmoS": 600, "retry": 0 },
+    { "id": "facebook-stats", "cmd": "scrape sync --cust <ID> --only stats", "trigger": "cron", "cron": "40 3 * * *", "on": false, "tmoS": 300, "retry": 0 },
+    { "id": "facebook-vendor-probe", "cmd": "scrape probe <vendor> <test-url>", "trigger": "cron", "cron": "0 3 * * 1", "on": false, "tmoS": 120, "retry": 0 },
+    { "id": "facebook-purge-old", "cmd": "scrape purge --old --cust <ID>", "trigger": "cron", "cron": "30 2 * * *", "on": false, "tmoS": 600, "retry": 0 }
+  ]
+}

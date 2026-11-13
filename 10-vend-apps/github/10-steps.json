@@ -1,0 +1,26 @@
+{
+  "vers": 1,
+  "vend": "gith",
+  "step": [
+    { "numb": 0, "iden": "tool-chec", "kind": "auto", "acts": "tool.chec", "hand": 0, "name": "Preflight: OS and git", "need": "one go (consent)", "done": "git works; dry-run shown" },
+    { "numb": 1, "iden": "sign-prep", "kind": "ask", "acts": "sign.prep", "hand": 0, "name": "Prepare sign-up: free username, strong password", "need": "your email address only", "done": "username free; password vaulted" },
+    { "numb": 2, "iden": "sign-form", "kind": "guide", "acts": "sign.form", "hand": 1, "name": "Sign-up form (hand job 1)", "need": "press submit", "done": "GET /users/<name> is 200" },
+    { "numb": 3, "iden": "sign-mail", "kind": "guide", "acts": "sign.mail", "hand": 2, "name": "Email link (hand job 2)", "need": "click the link", "done": "verified seen at step 5" },
+    { "numb": 4, "iden": "auth-devi", "kind": "guide", "acts": "auth.devi", "hand": 3, "name": "Login: type the code (hand job 3)", "need": "type the code on the device page", "done": "token received" },
+    { "numb": 5, "iden": "mail-chec", "kind": "auto", "acts": "mail.chec", "hand": 0, "name": "Check email verified", "need": "nothing", "done": "GET /user/emails shows verified" },
+    { "numb": 6, "iden": "twof-setz", "kind": "guide", "acts": "twof.setz", "hand": 4, "name": "Turn on 2FA (hand job 4)", "need": "follow the page; paste setup key and recovery codes", "done": "GET /user shows 2FA on" },
+    { "numb": 7, "iden": "iden-read", "kind": "auto", "acts": "iden.read", "hand": 0, "name": "Read identity, build noreply email", "need": "nothing", "done": "<id>+<login>@users.noreply.github.com known" },
+    { "numb": 8, "iden": "gitz-iden", "kind": "auto", "acts": "gitz.iden", "hand": 0, "name": "git identity + LF line endings", "need": "nothing", "done": "git config user.email matches" },
+    { "numb": 9, "iden": "sshz-keyz", "kind": "auto", "acts": "sshz.keyz", "hand": 0, "name": "SSH key (ed25519)", "need": "nothing", "done": "key listed on the account" },
+    { "numb": 10, "iden": "file-igno", "kind": "auto", "acts": "file.igno", "hand": 0, "name": ".gitignore, .gitattributes", "need": "nothing", "done": "files exist" },
+    { "numb": 11, "iden": "scan-secr", "kind": "auto", "acts": "scan.secr", "hand": 0, "name": "Secret scan of files to commit", "need": "only if a key-like file shows up", "done": "nothing risky to commit" },
+    { "numb": 12, "iden": "repo-make", "kind": "auto", "acts": "repo.make", "hand": 0, "name": "Create private repo, first commit, push", "need": "nothing", "done": "git ls-remote origin shows the branch" },
+    { "numb": 13, "iden": "repo-sett", "kind": "auto", "acts": "repo.sett", "hand": 0, "name": "Repo settings", "need": "nothing", "done": "GET /repos matches config" },
+    { "numb": 14, "iden": "rule-bran", "kind": "auto", "acts": "rule.bran", "hand": 0, "name": "Branch rules", "need": "nothing", "done": "rule exists, or skip is logged" },
+    { "numb": 15, "iden": "ciiz-secr", "kind": "auto", "acts": "ciiz.secr", "hand": 0, "name": "CI secrets, from the vault", "need": "nothing normally", "done": "secret is listed" },
+    { "numb": 16, "iden": "ciiz-file", "kind": "auto", "acts": "ciiz.file", "hand": 0, "name": "CI file: build, ping, kill switch", "need": "nothing", "done": "first Actions run is green" },
+    { "numb": 17, "iden": "ghcr-push", "kind": "auto", "acts": "ghcr.push", "hand": 0, "name": "Image registry (GHCR)", "need": "nothing", "done": "image listed, or skip is logged" },
+    { "numb": 18, "iden": "mirr-push", "kind": "auto", "acts": "mirr.push", "hand": 0, "name": "Mirrors (off by default)", "need": "nothing", "done": "git ls-remote works on each" },
+    { "numb": 19, "iden": "repo-fina", "kind": "auto", "acts": "repo.fina", "hand": 0, "name": "Final check + report", "need": "nothing", "done": "report printed" }
+  ]
+}

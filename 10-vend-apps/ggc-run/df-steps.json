@@ -1,0 +1,18 @@
+{
+  "vers": 1,
+  "vend": "ggcr",
+  "step": [
+    { "numb": 0, "iden": "tool-chec", "kind": "auto", "acts": "tool.chec", "hand": 0, "name": "Preflight: OS and gcloud", "need": "nothing", "done": "tool found, OS printed" },
+    { "numb": 1, "iden": "goog-sign", "kind": "guide", "acts": "goog.sign", "hand": 1, "name": "Sign in with a Google account (hand job 1)", "need": "create or pick your Google account, then type g", "done": "you typed g, or you are already logged in" },
+    { "numb": 2, "iden": "goog-logi", "kind": "guide", "acts": "goog.logi", "hand": 2, "name": "Approve the gcloud login code (hand job 2)", "need": "open the link, approve, paste the code", "done": "an access token works" },
+    { "numb": 3, "iden": "proj-make", "kind": "auto", "acts": "proj.make", "hand": 0, "name": "Create the project", "need": "nothing", "done": "project is ACTIVE" },
+    { "numb": 4, "iden": "bill-link", "kind": "guide", "acts": "bill.link", "hand": 3, "name": "Add a billing card, link billing (hand job 3)", "need": "add a card on the billing page", "done": "project billing is enabled" },
+    { "numb": 5, "iden": "apis-enab", "kind": "auto", "acts": "apis.enab", "hand": 0, "name": "Enable the APIs", "need": "nothing", "done": "every listed API is ENABLED" },
+    { "numb": 6, "iden": "budg-make", "kind": "auto", "acts": "budg.make", "hand": 0, "name": "Budget with alerts, before the deploy", "need": "nothing", "done": "budget exists" },
+    { "numb": 7, "iden": "sacc-make", "kind": "auto", "acts": "sacc.make", "hand": 0, "name": "Runtime service account, least role", "need": "nothing", "done": "account exists, role bound" },
+    { "numb": 8, "iden": "imag-path", "kind": "auto", "acts": "imag.path", "hand": 0, "name": "Image path", "need": "nothing", "done": "image reference known" },
+    { "numb": 9, "iden": "serv-depl", "kind": "auto", "acts": "serv.depl", "hand": 0, "name": "Deploy: min 0, max 1, CPU only in requests", "need": "nothing", "done": "service is Ready" },
+    { "numb": 10, "iden": "tick-wire", "kind": "auto", "acts": "tick.wire", "hand": 0, "name": "Hand the tick URL to Schedule", "need": "nothing", "done": "handoff file written" },
+    { "numb": 11, "iden": "fina-chec", "kind": "auto", "acts": "fina.chec", "hand": 0, "name": "Final check and report", "need": "nothing", "done": "report printed" }
+  ]
+}

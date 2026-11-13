@@ -1,0 +1,16 @@
+{
+  "vers": 1,
+  "vend": "rend",
+  "step": [
+    { "numb": 0, "iden": "tool-chec", "kind": "auto", "hand": 0, "name": "Preflight and dry-run", "need": "one go (consent)", "done": "config ok, vault opens" },
+    { "numb": 1, "iden": "sign-form", "kind": "guide", "hand": 1, "name": "Sign up with GitHub login (hand job 1)", "need": "press the GitHub button, type g", "done": "you typed g" },
+    { "numb": 2, "iden": "keyz-ask", "kind": "ask", "hand": 2, "name": "Create and paste one API key (hand job 2)", "need": "Account Settings > API Keys > New key, paste it", "done": "GET /owners is 200" },
+    { "numb": 3, "iden": "owne-find", "kind": "auto", "hand": 0, "name": "Find the workspace id", "need": "nothing", "done": "owner id in state" },
+    { "numb": 4, "iden": "serv-make", "kind": "auto", "hand": 0, "name": "Create the free web service from the image", "need": "nothing", "done": "service id and url in state" },
+    { "numb": 5, "iden": "serv-sett", "kind": "auto", "hand": 0, "name": "Check plan free and health path", "need": "nothing", "done": "fields equal config" },
+    { "numb": 6, "iden": "envv-sync", "kind": "auto", "hand": 0, "name": "Env vars from the vault, deploy once", "need": "nothing", "done": "env hash saved" },
+    { "numb": 7, "iden": "wire-trig", "kind": "auto", "hand": 0, "name": "Write the url as Trigger C", "need": "nothing", "done": "wiring file written" },
+    { "numb": 8, "iden": "cold-test", "kind": "auto", "hand": 0, "name": "Cold-start test vs the 202 window", "need": "nothing", "done": "wake time printed" },
+    { "numb": 9, "iden": "rend-fina", "kind": "auto", "hand": 0, "name": "Final check and report", "need": "nothing", "done": "report printed" }
+  ]
+}

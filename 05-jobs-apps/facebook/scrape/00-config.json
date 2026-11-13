@@ -1,0 +1,114 @@
+{
+  "home": "",
+  "market": {
+    "user_agent": "facebook-scrape/0.1",
+    "allow_hosts": ["facebook.com", "www.facebook.com", "m.facebook.com", "web.facebook.com", "l.facebook.com", "fb.com", "fb.watch"],
+    "timeout_s": 30,
+    "body_cap_kb": 4096,
+    "daily_cap": 200,
+    "text_cap": 4000,
+    "field_cap": 500,
+    "kinds": {
+      "page": {
+        "list": "",
+        "key": ["page_id", "id", "url", "pageUrl"],
+        "fields": { "name": ["name", "title", "pageName"], "url": ["url", "pageUrl", "link"], "about": ["about", "intro", "description"], "category": ["category", "categories"], "followers": ["followers", "followers_count", "followersCount", "likes"], "verified": ["verified", "is_verified"], "website": ["website"], "phone": ["phone"] },
+        "personal": []
+      },
+      "post": {
+        "list": "posts",
+        "key": ["post_id", "id", "postId", "url"],
+        "fields": { "text": ["text", "message", "content"], "url": ["url", "postUrl", "permalink"], "time": ["time", "timestamp", "created_time"], "reactions": ["reactions", "likes", "reactions_count", "reactionsCount"], "comments": ["comments", "comments_count", "commentsCount"], "shares": ["shares", "shares_count", "sharesCount"], "media": ["media", "image", "images"] },
+        "personal": []
+      },
+      "cmnt": {
+        "list": "comments",
+        "key": ["comment_id", "id", "commentId"],
+        "fields": { "text": ["text", "message", "content"], "author": ["author", "name", "from"], "time": ["time", "timestamp", "created_time"], "likes": ["likes", "like_count", "reactions"], "post": ["post_id", "postId"] },
+        "personal": ["author"]
+      },
+      "item": {
+        "list": "listings",
+        "key": ["listing_id", "id", "listingId"],
+        "fields": { "title": ["title", "name", "marketplace_listing_title"], "price": ["price", "listing_price", "amount"], "currency": ["currency"], "place": ["location", "place", "city"], "url": ["url", "listingUrl"], "status": ["status", "is_sold"], "time": ["time", "creation_time", "created_time"] },
+        "personal": []
+      },
+      "adlib": {
+        "list": "ads",
+        "key": ["ad_archive_id", "adArchiveId", "id"],
+        "fields": { "page": ["page_name", "pageName"], "text": ["body", "text", "ad_creative_body"], "start": ["start_date", "startDate", "ad_delivery_start_time"], "stop": ["end_date", "endDate", "ad_delivery_stop_time"], "url": ["url", "snapshotUrl", "ad_snapshot_url"], "active": ["is_active", "isActive"] },
+        "personal": []
+      }
+    }
+  },
+  "vendor": {
+    "file": "df-scrape-vendors.json",
+    "stop_pct": 80,
+    "breaker_fails": 3,
+    "breaker_cool_s": 900,
+    "order": ["scrapecreators", "apify", "brightdata"]
+  },
+  "deliv": {
+    "retries": 3,
+    "backoff_ms": 500,
+    "secret_env": "SCRAPE_HOOK_SECRET",
+    "sig_header": "x-scrape-signature",
+    "pull_page": 100
+  },
+  "secrets": { "master_env": "SCRAPE_MASTER_KEY" },
+  "graph": {
+    "base": "https://graph.facebook.com",
+    "dialog": "https://www.facebook.com",
+    "version": "v26.0",
+    "app_id_env": "FACE_APP_ID",
+    "app_secret_env": "FACE_APP_SECRET",
+    "redirect_uri": "",
+    "scopes": ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "pages_manage_metadata", "pages_messaging", "read_insights", "leads_retrieval"],
+    "deny_scopes": ["pages_manage_posts", "pages_manage_engagement", "pages_manage_ads", "pages_manage_instant_articles", "ads_management", "business_management", "instagram_content_publish", "publish_video", "publish_to_groups"],
+    "page_size": 25,
+    "max_pages": 20,
+    "max_rows": 5000,
+    "call_gap_ms": 300,
+    "slow_pct": 80,
+    "stop_pct": 95,
+    "slow_ms": 2000,
+    "timeout_s": 30,
+    "body_cap_kb": 4096,
+    "user_agent": "facebook-scrape/0.1",
+    "insights": ["page_media_view", "page_post_engagements", "page_follows"],
+    "insights_period": "day",
+    "fields": {
+      "inbox": "id,updated_time,message_count,participants",
+      "msgs": "id,created_time,from,to,message,attachments,sticker",
+      "feed": "id,message,created_time,permalink_url,shares,status_type,attachments",
+      "cmts": "id,message,created_time,from,like_count,parent",
+      "forms": "id,name,status,created_time,leads_count",
+      "leads": "id,created_time,field_data,ad_id,form_id",
+      "lives": "id,status,title,description,creation_time,permalink_url,live_views",
+      "lcmts": "id,message,created_time,from"
+    },
+    "paths": {
+      "pages": "me/accounts",
+      "inbox": "{page}/conversations",
+      "msgs": "{conv}/messages",
+      "feed": "{page}/published_posts",
+      "cmts": "{post}/comments",
+      "forms": "{page}/leadgen_forms",
+      "leads": "{form}/leads",
+      "lives": "{page}/live_videos",
+      "lcmts": "{live}/comments",
+      "stats": "{page}/insights",
+      "subs": "{page}/subscribed_apps",
+      "token": "oauth/access_token",
+      "debug": "debug_token"
+    }
+  },
+  "hook": {
+    "verify_env": "FACE_HOOK_VERIFY",
+    "status_url": "",
+    "user_keys": ["user_id", "from_id", "psid", "sender_id"]
+  },
+  "legal": { "retention_days": 90, "consent_required": true, "own_expire_days": 30 },
+  "sche": { "kill_switch": false, "max_fails": 3, "spike_pct": 300 },
+  "watch": { "ping_env": "SCRAPE_PING_URL", "spike_min": 20 }
+}

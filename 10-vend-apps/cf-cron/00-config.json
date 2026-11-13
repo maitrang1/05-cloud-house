@@ -1,0 +1,23 @@
+{
+  "vers": 1,
+  "data": { "root": "{home}/.05-cloud-house-secre", "vaul": "cf-cron-vault.json", "stat": "cf-cron-state.json", "audi": "cf-cron-audit.log", "wire": "schedule-c.json" },
+  "vaul": { "envz": "CLOUD_HOUSE_VAULT_PASS", "time": 3, "memo": 65536, "para": 1, "keyz": "cloudflare.apitoken" },
+  "cfla": {
+    "apiz": "https://api.cloudflare.com/client/v4",
+    "sign": "https://dash.cloudflare.com/sign-up",
+    "keyp": "https://dash.cloudflare.com/profile/api-tokens",
+    "minl": 30,
+    "acco": "",
+    "subd": "",
+    "scri": "cloud-house-tick",
+    "rout": "https://{scri}.{subd}.workers.dev",
+    "comp": "2025-01-01"
+  },
+  "trig": { "url": "", "path": "/tick", "meth": "POST", "head": "x-tick-secret", "secr": "trigger.tick_secret" },
+  "cron": { "peri": 5 },
+  "rout": { "wait": 120, "poll": 5 },
+  "wire": { "slot": "C", "laye": "schedule" },
+  "guid": { "open": true, "clip": true, "poll": 5, "wait": 900 },
+  "http": { "trys": 4, "back": 2, "maxw": 60, "agen": "cloud-house-cf-cron/1", "maxb": 4194304 },
+  "limi": { "reqs": 100000, "warn": 80, "trig": 5 }
+}
