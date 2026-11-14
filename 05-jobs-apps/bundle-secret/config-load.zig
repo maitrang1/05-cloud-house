@@ -20,14 +20,19 @@ pub const Pick = struct {
     files: []const []const u8 = &.{ "*token.json", "*client_secret.json", "*credentials.json" },
     skip_dirs: []const []const u8 = &.{ ".git", "zig-out", ".zig-cache", "node_modules", "zzzz-delete-force-items" },
     skip_markers: []const []const u8 = &.{ "Local State", "Preferences" },
-    skip: []const []const u8 = &.{},
+    skip: []const []const u8 = &.{"*session*"},
+    seed_only: []const []const u8 = &.{"*token.json"},
     file_maxz_kbyt: u32 = 256,
     total_maxz_mbyt: u32 = 64,
 };
-pub const Bundle = struct { path: []const u8 = "05-cloud-house/secret-bundle.enc", pass_envz: []const u8 = "SECRET_BUNDLE_PASS", pass_min: u32 = 16 };
+pub const Bundle = struct { root: []const u8 = "{home}/05-cloud-house-vault", path: []const u8 = "bundle-secret.enc", need_git: bool = true, pass_file: []const u8 = "{home}/.05-cloud-house-secre/05-cloud-house-vault.pass", pass_envz: []const u8 = "BUNDLE_SECRET_PASS", pass_min: u32 = 16 };
 pub const Argon = struct { time: u32 = 3, memo_kbyt: u32 = 65536, para: u32 = 1 };
 pub const Unpack = struct { file_mode: []const u8 = "600", trash: []const u8 = "{home}/.05-cloud-house-secre/bundle-trash" };
-pub const Conf = struct { vers: u32 = CF.vers, pick: Pick = .{}, bundle: Bundle = .{}, argon: Argon = .{}, unpack: Unpack = .{} };
+pub const GitCf = struct { bin: []const u8 = "git", timeout_secs: u32 = 120 };
+pub const FetchCf = struct { on_differ: []const u8 = "keep" };
+pub const ShipCf = struct { message: []const u8 = "update bundle" };
+pub const StateCf = struct { file: []const u8 = "{home}/.05-cloud-house-secre/bundle-secret-state.json" };
+pub const Conf = struct { vers: u32 = CF.vers, pick: Pick = .{}, bundle: Bundle = .{}, argon: Argon = .{}, unpack: Unpack = .{}, git: GitCf = .{}, fetch: FetchCf = .{}, ship: ShipCf = .{}, state: StateCf = .{} };
 
 var why_buf: [512]u8 = undefined;
 pub var why: []const u8 = "";
@@ -87,6 +92,11 @@ fn envName(n: []const u8) bool {
     return true;
 }
 
+// a folder or file setting: empty (switched off), {home}/..., or an absolute path ----
+fn homeOrAbs(p: []const u8) bool {
+    return p.len == 0 or std.mem.startsWith(u8, p, "{home}") or p[0] == '/' or (p.len > 2 and p[1] == ':');
+}
+
 pub fn check(c: *const Conf) ConfErro!void {
     if (c.vers != CF.vers) return bad("vers must be {d}", .{CF.vers});
     if (c.pick.dirs.len == 0 and c.pick.files.len == 0) return bad("pick: dirs and files are both empty, nothing would be picked", .{});
@@ -95,8 +105,11 @@ pub fn check(c: *const Conf) ConfErro!void {
     try nameList("pick.skip_markers", c.pick.skip_markers, false);
     try nameList("pick.files", c.pick.files, true);
     try nameList("pick.skip", c.pick.skip, true);
+    try nameList("pick.seed_only", c.pick.seed_only, true);
     if (c.pick.file_maxz_kbyt < 1 or c.pick.file_maxz_kbyt > CF.kbyt_maxz) return bad("pick.file_maxz_kbyt must be 1..{d}", .{CF.kbyt_maxz});
     if (c.pick.total_maxz_mbyt < 1 or c.pick.total_maxz_mbyt > CF.mbyt_maxz) return bad("pick.total_maxz_mbyt must be 1..{d}", .{CF.mbyt_maxz});
+    if (!homeOrAbs(c.bundle.root)) return bad("bundle.root must be empty (the scanned repo), start with {{home}}, or be an absolute path", .{});
+    if (!homeOrAbs(c.bundle.pass_file)) return bad("bundle.pass_file must be empty (no file), start with {{home}}, or be an absolute path", .{});
     const bp = c.bundle.path;
     if (bp.len == 0 or bp[0] == '/' or bp[0] == '\\' or std.mem.indexOfAny(u8, bp, ":\\") != null) return bad("bundle.path must be a relative path with '/' separators", .{});
     var it = std.mem.splitScalar(u8, bp, '/');
@@ -106,6 +119,11 @@ pub fn check(c: *const Conf) ConfErro!void {
     if (!box.costOkay(.{ .time = c.argon.time, .memo = c.argon.memo_kbyt, .para = c.argon.para })) return bad("argon: time 1..16, memo_kbyt 8..1048576, para 1..8", .{});
     if (modeOf(c.unpack.file_mode) == null) return bad("unpack.file_mode must be octal owner-only, such as 600", .{});
     if (c.unpack.trash.len == 0) return bad("unpack.trash must not be empty", .{});
+    if (c.git.bin.len == 0 or std.mem.indexOfAny(u8, c.git.bin, " \t\r\n") != null) return bad("git.bin must be one program name or path, without spaces", .{});
+    if (c.git.timeout_secs < 5 or c.git.timeout_secs > 3600) return bad("git.timeout_secs must be 5..3600", .{});
+    if (!std.mem.eql(u8, c.fetch.on_differ, "keep") and !std.mem.eql(u8, c.fetch.on_differ, "replace")) return bad("fetch.on_differ must be keep or replace", .{});
+    if (c.ship.message.len == 0 or c.ship.message.len > CF.name_maxz or std.mem.indexOfAny(u8, c.ship.message, "\r\n") != null) return bad("ship.message must be one line of 1..{d} characters", .{CF.name_maxz});
+    if (c.state.file.len == 0 or !homeOrAbs(c.state.file)) return bad("state.file must start with {{home}} or be an absolute path", .{});
 }
 
 pub fn confLoad(io: std.Io, a: std.mem.Allocator, path: []const u8) ConfErro!Conf {
@@ -124,6 +142,9 @@ test "shipped config parses and equals the defaults" {
     try std.testing.expectEqual(d.argon, c.argon);
     try std.testing.expectEqual(d.bundle.pass_min, c.bundle.pass_min);
     try std.testing.expectEqualStrings(d.bundle.path, c.bundle.path);
+    try std.testing.expectEqualStrings(d.bundle.root, c.bundle.root);
+    try std.testing.expectEqual(d.bundle.need_git, c.bundle.need_git);
+    try std.testing.expectEqualStrings(d.bundle.pass_file, c.bundle.pass_file);
     try std.testing.expectEqualStrings(d.bundle.pass_envz, c.bundle.pass_envz);
     try std.testing.expectEqual(d.pick.file_maxz_kbyt, c.pick.file_maxz_kbyt);
     try std.testing.expectEqual(d.pick.total_maxz_mbyt, c.pick.total_maxz_mbyt);
@@ -131,8 +152,15 @@ test "shipped config parses and equals the defaults" {
     try std.testing.expectEqual(d.pick.files.len, c.pick.files.len);
     try std.testing.expectEqual(d.pick.skip_dirs.len, c.pick.skip_dirs.len);
     try std.testing.expectEqual(d.pick.skip_markers.len, c.pick.skip_markers.len);
+    try std.testing.expectEqual(d.pick.seed_only.len, c.pick.seed_only.len);
+    try std.testing.expectEqual(d.pick.skip.len, c.pick.skip.len);
     try std.testing.expectEqualStrings(d.unpack.trash, c.unpack.trash);
     try std.testing.expectEqualStrings(d.unpack.file_mode, c.unpack.file_mode);
+    try std.testing.expectEqualStrings(d.git.bin, c.git.bin);
+    try std.testing.expectEqual(d.git.timeout_secs, c.git.timeout_secs);
+    try std.testing.expectEqualStrings(d.fetch.on_differ, c.fetch.on_differ);
+    try std.testing.expectEqualStrings(d.ship.message, c.ship.message);
+    try std.testing.expectEqualStrings(d.state.file, c.state.file);
 }
 
 test "unknown key is refused with line and column; bad values are refused" {
@@ -148,6 +176,8 @@ test "unknown key is refused with line and column; bad values are refused" {
         ,
         \\{"pick":{"dirs":["a/b"]}}
         ,
+        \\{"pick":{"seed_only":[""]}}
+        ,
         \\{"pick":{"file_maxz_kbyt":0}}
         ,
         \\{"pick":{"total_maxz_mbyt":99999}}
@@ -157,6 +187,10 @@ test "unknown key is refused with line and column; bad values are refused" {
         \\{"bundle":{"path":"a/../x.enc"}}
         ,
         \\{"bundle":{"path":"a\\x.enc"}}
+        ,
+        \\{"bundle":{"root":"relative/folder"}}
+        ,
+        \\{"bundle":{"pass_file":"rel/x.pass"}}
         ,
         \\{"bundle":{"pass_envz":"BAD NAME"}}
         ,
@@ -169,6 +203,20 @@ test "unknown key is refused with line and column; bad values are refused" {
         \\{"unpack":{"file_mode":"7"}}
         ,
         \\{"unpack":{"trash":""}}
+        ,
+        \\{"git":{"bin":"git status"}}
+        ,
+        \\{"git":{"timeout_secs":1}}
+        ,
+        \\{"fetch":{"on_differ":"overwrite"}}
+        ,
+        \\{"ship":{"message":""}}
+        ,
+        \\{"ship":{"message":"two\nlines"}}
+        ,
+        \\{"state":{"file":""}}
+        ,
+        \\{"state":{"file":"relative.json"}}
     };
     for (cases) |text| {
         const c = try parse(a, text, "t.json");
@@ -176,6 +224,12 @@ test "unknown key is refused with line and column; bad values are refused" {
     }
     const good = try parse(a, "{\"unpack\":{\"file_mode\":\"0600\"}}", "t.json");
     try check(&good);
+    for ([_][]const u8{ "", "{home}/v", "/abs/v", "C:\\v" }) |root| {
+        var ok_conf: Conf = .{};
+        ok_conf.bundle.root = root;
+        ok_conf.bundle.pass_file = root;
+        try check(&ok_conf);
+    }
 }
 
 test "modes: owner-only octal only; home placeholder fills" {

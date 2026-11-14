@@ -1,12 +1,12 @@
 // =====================================================================
-// Des: Build script for secret-bundle - one exe plus its offline unit test binary
+// Des: Build script for bundle-secret - one exe plus its offline unit test binary
 // Flo: options > exe (ReleaseSafe) > install > run step > test step (Debug)
 // Cre: 2026-11-14                          - | Mod: 2026-11-14
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none - `zig build` / `zig build test` / -Doptimize= / -Dtarget= / -Dstrip=true
-// Out: zig-out/bin/secret-bundle(.exe)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/secret-bundle && zig build
-// Exe: /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/secret-bundle/zig-out/bin/secret-bundle
+// Out: zig-out/bin/bundle-secret(.exe)
+// Run: cd /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret && zig build
+// Exe: /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret
 // =====================================================================
 const std = @import("std");
 const zon = @import("build.zig.zon");
@@ -24,13 +24,13 @@ pub fn build(b: *std.Build) void {
     const user_opt = b.option(std.builtin.OptimizeMode, "optimize", "Debug | ReleaseSafe (exe default) | ReleaseFast | ReleaseSmall");
     const strip = b.option(bool, "strip", "drop debug info from the exe");
 
-    const exe = b.addExecutable(.{ .name = "secret-bundle", .root_module = rootModule(b, target, user_opt orelse .ReleaseSafe, strip) });
+    const exe = b.addExecutable(.{ .name = "bundle-secret", .root_module = rootModule(b, target, user_opt orelse .ReleaseSafe, strip) });
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_cmd.addArgs(args);
-    b.step("run", "Run secret-bundle").dependOn(&run_cmd.step);
+    b.step("run", "Run bundle-secret").dependOn(&run_cmd.step);
 
     // one test binary rooted at root-main.zig; its `test {}` block imports every file ----
     const filters = b.option([]const []const u8, "test-filter", "only run tests whose name contains this text") orelse &.{};

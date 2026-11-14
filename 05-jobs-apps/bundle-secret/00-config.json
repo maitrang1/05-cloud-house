@@ -5,15 +5,23 @@
     "files": ["*token.json", "*client_secret.json", "*credentials.json"],
     "skip_dirs": [".git", "zig-out", ".zig-cache", "node_modules", "zzzz-delete-force-items"],
     "skip_markers": ["Local State", "Preferences"],
-    "skip": [],
+    "skip": ["*session*"],
+    "seed_only": ["*token.json"],
     "file_maxz_kbyt": 256,
     "total_maxz_mbyt": 64
   },
   "bundle": {
-    "path": "05-cloud-house/secret-bundle.enc",
-    "pass_envz": "SECRET_BUNDLE_PASS",
+    "root": "{home}/05-cloud-house-vault",
+    "path": "bundle-secret.enc",
+    "need_git": true,
+    "pass_file": "{home}/.05-cloud-house-secre/05-cloud-house-vault.pass",
+    "pass_envz": "BUNDLE_SECRET_PASS",
     "pass_min": 16
   },
+  "git": { "bin": "git", "timeout_secs": 120 },
+  "fetch": { "on_differ": "keep" },
+  "ship": { "message": "update bundle" },
+  "state": { "file": "{home}/.05-cloud-house-secre/bundle-secret-state.json" },
   "argon": { "time": 3, "memo_kbyt": 65536, "para": 1 },
   "unpack": {
     "file_mode": "600",
