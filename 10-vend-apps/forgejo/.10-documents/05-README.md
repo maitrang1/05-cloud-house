@@ -21,11 +21,11 @@ It installs Forgejo on your own Linux server, checks the download is genuine, tu
 1. Create `~/.05-cloud-house-secre/forgejo-account.json` with `{"user": "your-name", "mail": "you@example.com"}`.
 2. Look before you leap (changes nothing):
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup run
+/home/mai_trang/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup run
 ```
 3. Run it for real:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup run --go
+/home/mai_trang/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup run --go
 ```
 It asks for a vault passphrase, then prints each step and ends with `done · skipped · to-do · hand jobs used`.
 

@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: get request (method, url, body), set url, role, member
 // Out: true when the policy changed
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/ggc-run && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv[1] = plan|run|status|drift|fix|pause|resume|revoke|tickkey|vault|version|help ; flags --live --paid --config F --steps F
 // Out: stdout status lines, exit code 0 ok · 1 failed · 2 usage/config · 3 drift · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/aws-eventbridge && zig build run -- help
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/aws-eventbridge/zig-out/bin/aws-eventbridge-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/aws-eventbridge && zig build run -- help
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/aws-eventbridge/zig-out/bin/aws-eventbridge-setup
 // =====================================================================
 const std = @import("std");
 const builtin = @import("builtin");

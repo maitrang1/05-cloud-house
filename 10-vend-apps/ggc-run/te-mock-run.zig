@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: optional --bill-after N (billing shows up after N list calls)
 // Out: stdout: port and token; serves until killed
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run && zig build && zig-out/bin/ggc-run-mock
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run-mock
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/ggc-run && zig build && zig-out/bin/ggc-run-mock
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run-mock
 // =====================================================================
 const std = @import("std");
 const mock = @import("te-mock.zig");

@@ -28,12 +28,12 @@ gh auth refresh -h github.com -s user:email,read:user,write:public_key
 ```
 3. Look before you leap (changes nothing):
 ```
-cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github run --root /home/mai_trang/05-cloud-house-synch
+cd /home/mai_trang/05-cloud-house/10-vend-apps/github
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github run --root /home/mai_trang/05-cloud-house-synch
 ```
 4. Run it for real. It asks for a vault passphrase (8 or more characters): save it in your password manager.
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github run --live --root /home/mai_trang/05-cloud-house-synch
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github run --live --root /home/mai_trang/05-cloud-house-synch
 ```
 It prints each step and ends with `done: 18  skipped: 2  stopped at: (finished)`.
 

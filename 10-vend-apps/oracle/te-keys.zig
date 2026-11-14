@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none
 // Out: pem1 (PKCS#1), pem8 (PKCS#8), fing (expected fingerprint)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle && zig build test
 // Exe: none (test fixture)
 // =====================================================================
 // the armor words are split so this source never trips a secret scanner ----

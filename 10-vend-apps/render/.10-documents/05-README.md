@@ -21,12 +21,12 @@ It creates a free web service on Render from a public container image, sets its 
 1. Open `00-config.json` and set `imag` (under `rend`) to your public image path.
 2. Preview. Nothing changes:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup run
+/home/mai_trang/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup run
 ```
 You see the plan and `hand jobs: 2`.
 3. Run it for real:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup run --go
+/home/mai_trang/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup run --go
 ```
 It opens the sign-up page, waits for you to type `g`, asks for your API key (hidden), then does the rest. It ends with:
 ```

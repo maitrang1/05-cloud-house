@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: unix seconds, a day count, or a YYYY-MM-DD text
 // Out: YYYY-MM-DD text or a number of days
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/gitlab && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

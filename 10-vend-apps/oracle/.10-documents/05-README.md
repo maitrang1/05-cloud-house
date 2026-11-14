@@ -21,7 +21,7 @@ Oracle gives every new account a small always-on Linux computer for free. Settin
 ## Quick Start
 1. See the plan (nothing happens):
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup plan
+/home/mai_trang/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup plan
 ```
 You will see 12 steps and `hand jobs: 3 total, 0 done · steps left: 12`.
 2. Set a passphrase for the key vault (8+ characters):
@@ -30,7 +30,7 @@ export CLOUD_HOUSE_VAULT_PASS='pick-a-long-phrase'
 ```
 3. Run it for real and follow the prompts:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup run --live
+/home/mai_trang/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup run --live
 ```
 
 ---

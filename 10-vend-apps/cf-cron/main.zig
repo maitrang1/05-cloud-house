@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv: run|status|cold|revoke|vault|help  [--go]  [--conf <file>]
 // Out: stdout lines, exit code 0 ok · 1 failed · 2 usage/config · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron && zig build test
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cf-cron && zig build test
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup
 // =====================================================================
 const std = @import("std");
 const builtin = @import("builtin");

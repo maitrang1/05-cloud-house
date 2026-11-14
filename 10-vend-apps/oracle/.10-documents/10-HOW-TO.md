@@ -3,10 +3,10 @@
 Every option, with steps. See `05-README.md` first for the quick start.
 Steps marked **(untested on a real account)** need your Oracle account. Everything else was run against a practice copy of Oracle.
 
-`EXE` below means `/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup` (Windows: `...\oracle-setup.exe`).
+`EXE` below means `/home/mai_trang/05-cloud-house/10-vend-apps/oracle/zig-out/rel/x86_64-linux-musl/bin/oracle-setup` (Windows: `...\oracle-setup.exe`).
 Run the commands from the folder that holds `00-config.json`:
 ```
-cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle
+cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle
 ```
 
 ---

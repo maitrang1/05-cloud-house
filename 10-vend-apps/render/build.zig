@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: zig build [run|test|mock] [-Doptimize=..] [-Dtarget=..]
 // Out: zig-out/bin/render-setup, zig-out/bin/render-mock, test results
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render && zig build test
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/render && zig build test
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup
 // =====================================================================
 const std = @import("std");
 

@@ -3,7 +3,7 @@
 // Flo: reply code > pick what/why/fix > on a dead key: drop it from the vault and reopen the key step
 // Inp: Ctx, Reply or error, a short label of the call
 // Out: Outc.fail (or the error itself when it is not one we explain)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

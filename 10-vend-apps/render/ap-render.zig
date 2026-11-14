@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: base url, api key, ids and settings per call
 // Out: typed values, or an error plus the vendor message in `mess`
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/render && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

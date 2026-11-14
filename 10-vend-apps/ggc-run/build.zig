@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: zig build [run|mock|test] [-Doptimize=..] [-Dtarget=..]
 // Out: zig-out/bin/ggc-run, zig-out/bin/ggc-run-mock, test results
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/ggc-run && zig build test
 // Exe: none
 // =====================================================================
 const std = @import("std");

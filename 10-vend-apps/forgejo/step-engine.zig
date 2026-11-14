@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: an ordered list of Step rows (each with a run function)
 // Out: updated state file, a final report (done/skipped/to-do/hand jobs/limits)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/forgejo && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

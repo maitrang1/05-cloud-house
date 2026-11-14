@@ -21,12 +21,12 @@ It uploads a tiny Worker to your Cloudflare account, turns on its free `workers.
 1. Open `00-config.json` and set `url` (under `trig`) to your Trigger address.
 2. Preview. Nothing changes:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup run
+/home/mai_trang/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup run
 ```
 You see the plan and `hand jobs: 2`.
 3. Run it for real:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup run --go
+/home/mai_trang/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-setup run --go
 ```
 It opens the sign-up page, waits for you to type `g`, asks for your API token (hidden), then does the rest. It ends with:
 ```

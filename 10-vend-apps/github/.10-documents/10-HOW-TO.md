@@ -2,7 +2,7 @@
 
 Every task, step by step. See `05-README.md` first. Run the commands from the app folder:
 ```
-cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github
+cd /home/mai_trang/05-cloud-house/10-vend-apps/github
 ```
 
 ---
@@ -13,10 +13,10 @@ Follow `05-README.md` Quick Start. If a step needs you (for example two-factor s
 ---
 
 ## Publish a change to GitHub
-1. Edit your code in `/home/mai_trang/00_modules/05-cloud-house`. Never edit the copy folder: it is overwritten.
+1. Edit your code in `/home/mai_trang/05-cloud-house`. Never edit the copy folder: it is overwritten.
 2. Look at what would happen (changes nothing):
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github publish --from /home/mai_trang/00_modules/05-cloud-house --root /home/mai_trang/05-cloud-house-synch
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github publish --from /home/mai_trang/05-cloud-house --root /home/mai_trang/05-cloud-house-synch
 ```
 ```
 mirror: copied 7 · same 385 · denied 0 · too big 0 · moved to trash 0
@@ -24,7 +24,7 @@ dry-run: nothing scanned, committed or pushed. Pass --live to publish.
 ```
 3. Publish for real:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github publish --from /home/mai_trang/00_modules/05-cloud-house --root /home/mai_trang/05-cloud-house-synch --live
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github publish --from /home/mai_trang/05-cloud-house --root /home/mai_trang/05-cloud-house-synch --live
 ```
 ```
 mirror: copied 7 · same 385 · denied 0 · too big 0 · moved to trash 0
@@ -38,7 +38,7 @@ If nothing changed it says `nothing to publish`. It always tries the upload, so 
 
 ## Copy only (no upload)
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github push --from /home/mai_trang/00_modules/05-cloud-house --root /home/mai_trang/05-cloud-house-synch --live
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github push --from /home/mai_trang/05-cloud-house --root /home/mai_trang/05-cloud-house-synch --live
 ```
 Files you removed from your work folder are moved to `~/00_modules/zzzz-delete-force-items/05-cloud-house-synch/`, never deleted.
 
@@ -47,8 +47,8 @@ Files you removed from your work folder are moved to `~/00_modules/zzzz-delete-f
 ## Test or build one app
 Nothing runs unless you name an app. `--app` takes the app's short name (its last folder, like `github`; `facebook-scrape` and `zalochat-scrape` for the two `scrape` apps); repeat it for more; `--app-all` forces every app; `--app-edit` runs only the apps you changed since their last green run (an app never tested counts as changed):
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github test --from /home/mai_trang/00_modules/05-cloud-house --app github
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github build --from /home/mai_trang/00_modules/05-cloud-house --app github --target windows
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github test --from /home/mai_trang/05-cloud-house --app github
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github build --from /home/mai_trang/05-cloud-house --app github --target windows
 ```
 Pick exactly one of those three. `build` without `--target` makes a normal exe for this machine in the app's `zig-out/bin`.
 
@@ -65,7 +65,7 @@ A normal push only runs the tests of the apps whose folders changed.
 
 ## See where setup stands
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github plan --root /home/mai_trang/05-cloud-house-synch
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github plan --root /home/mai_trang/05-cloud-house-synch
 ```
 ```
 00 [done] Preflight: OS and git
@@ -79,7 +79,7 @@ A normal push only runs the tests of the apps whose folders changed.
 ## Undo what the app made
 Kills the login and secrets the app made. Your repo stays.
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/github/zig-out/bin/github revoke --live --root /home/mai_trang/05-cloud-house-synch
+/home/mai_trang/05-cloud-house/10-vend-apps/github/zig-out/bin/github revoke --live --root /home/mai_trang/05-cloud-house-synch
 ```
 
 ---

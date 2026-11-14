@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: Opts (command, flags, paths), typed lines
 // Out: stdout lines, exit code 0 ok · 1 failed · 2 usage/config · 3 drift · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

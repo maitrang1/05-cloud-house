@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none - `zig build` / `zig build test` / -Doptimize= / -Dtarget= / -Dstrip=true
 // Out: zig-out/bin/bundle-secret(.exe)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret && zig build
-// Exe: /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret
+// Run: cd /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret && zig build
+// Exe: /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret
 // =====================================================================
 const std = @import("std");
 const zon = @import("build.zig.zon");

@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none - `bundle-secret pack|unpack|check|status|version|help` -- --repo --config --home --go
 // Out: exit 0 ok · 1 failed · 2 usage/config · 3 files differ (check)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret && zig build run -- status --repo <repo>
-// Exe: /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret
+// Run: cd /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret && zig build run -- status --repo <repo>
+// Exe: /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret
 // =====================================================================
 const std = @import("std");
 const build_options = @import("build_options");

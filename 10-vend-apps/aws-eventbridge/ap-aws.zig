@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: service addresses, region names, call parameters
 // Out: Reply{ code, body, kind }; Aws.last holds the last failure text
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/aws-eventbridge && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/aws-eventbridge && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

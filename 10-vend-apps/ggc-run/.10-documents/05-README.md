@@ -20,13 +20,13 @@ Google Cloud Run runs a small program only when someone calls it, so it costs no
 ## Quick Start
 1. Look at the plan first. Nothing changes:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run run
+/home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run run
 ```
 You see the 12 steps and `hand jobs in the list: 3`.
 
 2. Run it for real:
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run run --go
+/home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run run --go
 ```
 3. When it opens a page, do what the three lines say, then wait. It notices on its own, or you type `g`.
 

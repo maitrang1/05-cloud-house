@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: base url, API key, method, path, optional body
 // Out: Reply (code, parsed JSON, raw text); job ids, drift groups, newest history item
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

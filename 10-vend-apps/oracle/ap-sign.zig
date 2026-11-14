@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: Creds (tenancy, user, fingerprint, key), method, target (path?query), host, date, body
 // Out: Signed{ auth header value, x-content-sha256 value }
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

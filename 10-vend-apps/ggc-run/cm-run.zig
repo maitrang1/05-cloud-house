@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: Ctx, live flag
 // Out: exit code 0 ok, 1 failed, 2 usage, 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/ggc-run && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none
 // Out: three lines on stdout
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build && zig-out/bin/cronjoborg-mock
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org/zig-out/bin/cronjoborg-mock
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build && zig-out/bin/cronjoborg-mock
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org/zig-out/bin/cronjoborg-mock
 // =====================================================================
 const std = @import("std");
 const mock = @import("te-mock.zig");

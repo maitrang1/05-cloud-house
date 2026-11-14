@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv[1] = port (0 = pick one), argv[2] = route pings answered 503 first (default 0)
 // Out: stdout "mock listening <port>"
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron && zig build mock
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-mock
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cf-cron && zig build mock
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/cf-cron/zig-out/bin/cf-cron-mock
 // =====================================================================
 const std = @import("std");
 const mock = @import("te-mock.zig");

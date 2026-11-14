@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: Forgejo base API url (".../api/v1"), token, calls
 // Out: typed answers, or an error (Unauthorized, Forbidden, NotFound, Conflict, RateLimited, ApiError, BadJson)
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/forgejo && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

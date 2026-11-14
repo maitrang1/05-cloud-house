@@ -3,7 +3,7 @@
 // Flo: tick: url + vaulted secret > sync: job by id or title > create / patch drift > verify: history > final: handoff file
 // Inp: Ctx
 // Out: Outc per action
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

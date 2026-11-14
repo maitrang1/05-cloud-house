@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: zig build [run|test] [-Doptimize=..] [-Dtarget=..]
 // Out: zig-out/bin/forgejo-setup, test results
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo && zig build test
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/forgejo && zig build test
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup
 // =====================================================================
 const std = @import("std");
 

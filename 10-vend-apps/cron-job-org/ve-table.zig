@@ -3,7 +3,7 @@
 // Flo: name in df-steps.json > function pointer
 // Inp: none
 // Out: table of Entry
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file)
 // =====================================================================
 const engi = @import("co-engine.zig");

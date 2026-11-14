@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv: run|status|cold|revoke|vault|help  [--go]  [--conf <file>]
 // Out: stdout lines, exit code 0 ok · 1 failed · 2 usage/config · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render && zig build test
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/render && zig build test
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/render/zig-out/bin/render-setup
 // =====================================================================
 const std = @import("std");
 const builtin = @import("builtin");

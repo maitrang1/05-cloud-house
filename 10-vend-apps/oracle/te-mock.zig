@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: HTTP requests from the app under test
 // Out: Oracle-shaped JSON answers; counters for the tests
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle && zig build test
 // Exe: none (test file)
 // =====================================================================
 const std = @import("std");

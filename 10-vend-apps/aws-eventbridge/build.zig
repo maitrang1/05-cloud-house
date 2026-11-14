@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: zig build [run|test] [-Doptimize=..] [-Dtarget=..]
 // Out: zig-out/bin/aws-eventbridge-setup, test results
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/aws-eventbridge && zig build test
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/aws-eventbridge/zig-out/bin/aws-eventbridge-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/aws-eventbridge && zig build test
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/aws-eventbridge/zig-out/bin/aws-eventbridge-setup
 // =====================================================================
 const std = @import("std");
 

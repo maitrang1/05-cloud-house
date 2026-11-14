@@ -25,7 +25,7 @@ export SCRAPE_HOME=/home/you/facebook-data
 ```
 2. Add a customer and one public Page to read:
 ```
-/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape cust --cust acme --add-target page=https://www.facebook.com/example
+/home/mai_trang/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape cust --cust acme --add-target page=https://www.facebook.com/example
 ```
 You see:
 ```
@@ -33,8 +33,8 @@ acme: 1 target(s) · webhook none · vendors on · consent NO
 ```
 3. Record that the customer agrees, then preview:
 ```
-/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape consent --cust acme --grant
-/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape scan --cust acme --dry-run
+/home/mai_trang/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape consent --cust acme --grant
+/home/mai_trang/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape scan --cust acme --dry-run
 ```
 You see:
 ```

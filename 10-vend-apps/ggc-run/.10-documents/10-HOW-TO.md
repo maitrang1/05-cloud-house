@@ -4,7 +4,7 @@ Every option, with steps. See `05-README.md` first for the quick start.
 Tested on 2026-11-13 against a pretend Google on this PC (real Google: not yet tried). Steps that need your Google account are marked **not tested live**.
 
 `EXE` below means:
-- Linux/macOS: `/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run`
+- Linux/macOS: `/home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run`
 - Windows: `E:\00_modules\05-cloud-house\10-vend-apps\ggc-run\zig-out\rel\x86_64-windows\bin\ggc-run.exe`
 
 ---
@@ -75,7 +75,7 @@ The first only says what would happen. The second removes public access to the s
 ## Try it with no Google account (pretend Google)
 1. Start the pretend Google (leave this window open):
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run-mock --bill-after 2
+/home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run-mock --bill-after 2
 ```
 It prints `mock port 43425` (your number will differ) and `token ya29.mock-token`.
 2. Copy `00-config.json` to a new file. In the copy set every address under `apis` to `http://127.0.0.1:<port>/crm`, `/bill`, `/budg`, `/usag`, `/iam`, `/arti`, `/run`, `/moni`, set `auth.mode` to `env`, and `goog.proj_iden` to `cloud-house-guide01`.

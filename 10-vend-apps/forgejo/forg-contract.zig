@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: none
 // Out: test results
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/forgejo && zig build test
 // Exe: none (test-only file)
 // =====================================================================
 const std = @import("std");

@@ -21,12 +21,12 @@ It finds your GitHub login, helps you sign up on GitLab (you press the buttons),
 ## Quick Start
 1. Look before you leap (changes nothing):
 ```
-cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab/zig-out/bin/gitlab-setup run
+cd /home/mai_trang/05-cloud-house/10-vend-apps/gitlab
+/home/mai_trang/05-cloud-house/10-vend-apps/gitlab/zig-out/bin/gitlab-setup run
 ```
 2. Run it for real. It asks for a vault passphrase (8 or more characters): save it in your password manager.
 ```
-/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/gitlab/zig-out/bin/gitlab-setup run --go
+/home/mai_trang/05-cloud-house/10-vend-apps/gitlab/zig-out/bin/gitlab-setup run --go
 ```
 It stops when it needs you (sign-up, email, login), says exactly what to do, and you run the same command again.
 

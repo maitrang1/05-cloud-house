@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv[1] = run|status|drift|revoke|vault|help ; argv[2] = --go (consent for a live run)
 // Out: stdout status lines, exit code 0 ok · 1 failed · 2 usage/config · 3 drift · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo && zig build run -- help
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/forgejo && zig build run -- help
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/forgejo/zig-out/bin/forgejo-setup
 // =====================================================================
 const std = @import("std");
 const osyz = @import("os-thin.zig");

@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: HTTP requests on 127.0.0.1
 // Out: JSON answers; counters (seen, bads, deletes, creates, tickRuns), the request log
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file; see te-mock-run.zig)
 // =====================================================================
 const std = @import("std");

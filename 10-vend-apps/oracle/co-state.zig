@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: path of the state file
 // Out: Stat struct in memory, JSON file on disk
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/oracle && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/oracle && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

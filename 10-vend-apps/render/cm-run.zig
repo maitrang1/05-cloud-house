@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: command, --go, --conf <path>
 // Out: stdout lines; exit 0 ok, 1 failed, 2 usage/config, 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/render && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

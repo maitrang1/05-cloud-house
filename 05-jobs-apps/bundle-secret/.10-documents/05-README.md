@@ -20,11 +20,11 @@ It finds your secret files (the ones in `.secrets` folders and files such as `*t
 ## Quick Start
 1. Look first (changes nothing):
 ```
-/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret pack --repo /home/mai_trang/00_modules --config /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/00-config.json
+/home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret pack --repo /home/mai_trang/00_modules --config /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/00-config.json
 ```
 2. Lock them (you type the passphrase twice, hidden):
 ```
-/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret pack --repo /home/mai_trang/00_modules --config /home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/bundle-secret/00-config.json --go
+/home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/zig-out/bin/bundle-secret pack --repo /home/mai_trang/00_modules --config /home/mai_trang/05-cloud-house/05-jobs-apps/bundle-secret/00-config.json --go
 ```
 3. Upload the file from the vault folder (see `10-HOW-TO.md`).
 

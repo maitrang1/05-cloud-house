@@ -5,8 +5,8 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: argv[1] = run|plan|status|usage|revoke|help ; --go (really do it) ; --conf <path>
 // Out: stdout lines, exit code 0 ok · 1 failed · 2 usage/config · 3 drift or quota warning · 4 needs a human
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build run -- help
-// Exe: /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org/zig-out/bin/cronjoborg
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build run -- help
+// Exe: /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org/zig-out/bin/cronjoborg
 // =====================================================================
 const std = @import("std");
 const osyz = @import("co-os.zig");

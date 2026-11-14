@@ -5,7 +5,7 @@
 // Who: zzOWN.com - Own Fast. Work Faster.  - | Ema: zzown.com@gmail.com
 // Inp: vault path, passphrase, Argon2 settings from config
 // Out: values by key in memory, sealed JSON file on disk
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/render && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/render && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

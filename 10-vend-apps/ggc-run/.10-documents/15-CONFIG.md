@@ -7,7 +7,7 @@ Plain facts: where things go, what each setting does. For steps, see `10-HOW-TO.
 ## The Program
 | Item | Value |
 |---|---|
-| File | `/home/mai_trang/00_modules/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run` |
+| File | `/home/mai_trang/05-cloud-house/10-vend-apps/ggc-run/zig-out/bin/ggc-run` |
 | Run | `ggc-run <run\|plan\|status\|usage\|revoke\|help> [--go] [--conf PATH]` |
 | Settings file | `00-config.json` in the folder you run from (or `--conf PATH`) |
 | Memory folder | `{home}/.05-cloud-house-secre/` |

@@ -3,7 +3,7 @@
 // Flo: preflight: open the vault > sign-up: key vaulted? skip, else guide > key: env var or hidden prompt > prove it with GET /jobs > vault it
 // Inp: Ctx
 // Out: Outc per action
-// Run: cd /home/mai_trang/00_modules/05-cloud-house/10-vend-apps/cron-job-org && zig build test
+// Run: cd /home/mai_trang/05-cloud-house/10-vend-apps/cron-job-org && zig build test
 // Exe: none (library file)
 // =====================================================================
 const std = @import("std");

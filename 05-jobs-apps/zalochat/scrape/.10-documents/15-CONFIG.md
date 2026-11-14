@@ -7,7 +7,7 @@ Plain facts: where things go, what the settings do. For steps, see `10-HOW-TO.md
 ## The Program
 | Item | Value |
 |---|---|
-| File (Linux) | `/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/zalochat/scrape/zig-out/linux-x86_64/bin/scrape` |
+| File (Linux) | `/home/mai_trang/05-cloud-house/05-jobs-apps/zalochat/scrape/zig-out/linux-x86_64/bin/scrape` |
 | File (Windows) | `E:\00_modules\05-cloud-house\05-jobs-apps\zalochat\scrape\zig-out\windows-x86_64\bin\scrape.exe` |
 | Run | `scrape <command> [--config FILE] [--json]` |
 | Data folder | `SCRAPE_HOME`, else the `home` setting, else `.zalochat-scrape` in your home folder |

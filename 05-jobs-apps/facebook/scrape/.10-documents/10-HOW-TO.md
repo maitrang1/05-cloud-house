@@ -1,7 +1,7 @@
 # How To
 
 Every command, with steps. See `05-README.md` first for the quick start. In every command below, `scrape` means:
-`/home/mai_trang/00_modules/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape` (Windows: `...\zig-out\bin-windows\scrape.exe`).
+`/home/mai_trang/05-cloud-house/05-jobs-apps/facebook/scrape/zig-out/bin/scrape` (Windows: `...\zig-out\bin-windows\scrape.exe`).
 
 ---
 
