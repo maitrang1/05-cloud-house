@@ -139,7 +139,14 @@ fn runCmd(gpa: std.mem.Allocator, io: std.Io, cmd: Cmd, argv: []const []const u8
         },
         .rotate => blk: {
             var mirrCtx = mirr.Ctx{ .gpa = gpa, .io = io, .conf = &cfg, .vaul = &vaul1, .stat = &stat1, .gitl = &gitl1, .gith = &gith1 };
-            _ = try mirr.Ctx.rotaToke(&mirrCtx, gpa);
+            const done = try mirr.Ctx.rotaToke(&mirrCtx, gpa);
+            // a real rotation changes the token id and expiry in the state; without this save the next run would rotate again
+            try stat1.save();
+            osyz.outz(io, "rotate: {s}\n", .{switch (done) {
+                .okay => |n| n,
+                .skip => |n| n,
+                .wait => "needs a human",
+            }});
             break :blk CF.exitOkay;
         },
         .revoke => blk: {

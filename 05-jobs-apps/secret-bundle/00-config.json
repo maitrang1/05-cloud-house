@@ -1,0 +1,22 @@
+{
+  "vers": 1,
+  "pick": {
+    "dirs": [".secrets"],
+    "files": ["*token.json", "*client_secret.json", "*credentials.json"],
+    "skip_dirs": [".git", "zig-out", ".zig-cache", "node_modules", "zzzz-delete-force-items"],
+    "skip_markers": ["Local State", "Preferences"],
+    "skip": [],
+    "file_maxz_kbyt": 256,
+    "total_maxz_mbyt": 64
+  },
+  "bundle": {
+    "path": "05-cloud-house/secret-bundle.enc",
+    "pass_envz": "SECRET_BUNDLE_PASS",
+    "pass_min": 16
+  },
+  "argon": { "time": 3, "memo_kbyt": 65536, "para": 1 },
+  "unpack": {
+    "file_mode": "600",
+    "trash": "{home}/.05-cloud-house-secre/bundle-trash"
+  }
+}

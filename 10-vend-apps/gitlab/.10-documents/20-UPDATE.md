@@ -4,6 +4,11 @@ What changed, newest first.
 
 ---
 
+## 2026-11-14
+**Fixed:** `rotate` now saves its state after a real renewal (before, the next run would renew again), and it prints `rotate: not due` or `rotate: rotated`.
+
+---
+
 ## 2026-11-13
 **Added:** login through `glab` (or your own OAuth app id kept in a private file); your GitHub login and token are read from `gh`.
 **Changed:** the project can be public, internal or private by a setting. All apps share one private folder, `~/.05-cloud-house-secre/`. The vault is now `gitlab-vault.json`.
